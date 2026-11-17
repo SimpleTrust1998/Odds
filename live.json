@@ -1,1 +1,1 @@
-{"version":1,"journal":[],"last":{},"stats":{},"heartbeat":1794883983515,"started":1794883978797,"lastSummaryDay":""}
+{"version":1,"journal":[{"id":"ETH15-1794884940000","key":"ETH15","asset":"ETH","h":15,"t0":1794884940000,"p0":1820.87,"pUp":0.4544,"dir":"down","enabled":true,"blocked":false,"sent":true,"status":"pending"}],"last":{"ETH15":1794884940000},"stats":{},"heartbeat":1794884943846,"started":1794883978797,"lastSummaryDay":""}
