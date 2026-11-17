@@ -97,7 +97,7 @@ export function fitLR(X, idx, ys, { iters = 150, lr = 0.4, l2 = 0.05, init = nul
   for (let k = 0; k < n; k++) { const o = idx[k] * d; for (let j = 0; j < d; j++) Z[k * d + j] = (X[o + j] - mu[j]) / sd[j]; }
   const w = new Float64Array(d), g = new Float64Array(d);
   let b = 0;
-  if (init) { for (let j = 0; j < d; j++) w[j] = init.w[j] * init.sd[j] / sd[j]; b = init.b; }
+  if (init) { b = init.b; for (let j = 0; j < d; j++) { w[j] = init.w[j] * sd[j] / init.sd[j]; b += init.w[j] * (mu[j] - init.mu[j]) / init.sd[j]; } }
   for (let it = 0; it < iters; it++) {
     g.fill(0); let gb = 0;
     for (let k = 0; k < n; k++) {
@@ -133,18 +133,16 @@ export function thin(idx, picks, h) {
 
 // ---------- перевірка «наперед» ----------
 // Модель перевчається кожні `step` хвилин лише на тому, що було відомо на момент start (мітка i+h <= start).
-export function walkForward(S, X, h, { startFrac = 0.25, step = 4320, stride = 3, fit = {} } = {}) {
+export function walkForward(S, X, h, { startFrac = 0.25, step = 4320, stride = 1, fit = { iters: 100 } } = {}) {
   const last = S.n - 1 - h;
   const first = WARM + Math.floor((last - WARM) * startFrac);
   const ps = [], ys = [], idxOut = [];
-  let prevModel = null;
   for (let start = first; start <= last; start += step) {
     const end = Math.min(start + step - 1, last);
     const tr = [], yy = [];
     for (let i = WARM; i + h <= start; i += stride) { const y = labelAt(S, i, h); if (y < 0) continue; tr.push(i); yy.push(y); }
     if (tr.length < 2000) continue;
-    const m = fitLR(X, tr, yy, { ...fit, ...(prevModel ? { init: prevModel, iters: 60 } : {}) });
-    prevModel = m;
+    const m = fitLR(X, tr, yy, fit);   // кожен відрізок навчається з нуля: оцінки не залежать від ланцюжка попередніх
     for (let i = start; i <= end; i++) {
       const y = labelAt(S, i, h); if (y < 0) continue;
       ps.push(predictLR(m, X.subarray(i * D, i * D + D))); ys.push(y); idxOut.push(i);
@@ -163,7 +161,7 @@ export function betsAt(wf, h, tau, lo = 0, hi = wf.ps.length) {
   for (const k of bets) { if ((wf.ps[k] >= 0.5) === (wf.ys[k] === 1)) hit++; if (wf.ys[k] === 1) ups++; }
   return { n: bets.length, hit, acc: bets.length ? hit / bets.length : NaN, ups, base: bets.length ? ups / bets.length : NaN };
 }
-export function selectAndTest(wf, h, { valFrac = 0.6, zSel = 1.28, minBets = 60 } = {}) {
+export function selectAndTest(wf, h, { valFrac = 0.6, zSel = 1.28, minBets = 400 } = {}) {
   const cut = Math.floor(wf.ps.length * valFrac);
   let best = null;
   for (const tau of TAUS) {
@@ -185,16 +183,19 @@ import { fileURLToPath } from 'node:url';
 const ENV = process.env;
 const numEnv = (v, d) => { const x = parseFloat(v); return Number.isFinite(x) ? x : d; };
 
+const PAYOUT = numEnv(ENV.PAYOUT, 1.8);   // скільки повертається за ставку 1 при виграші (Bybit Odds зараз: 1.80×)
 export const CFG = {
   assets: [{ id: 'BTC', sym: 'BTCUSDT' }, { id: 'ETH', sym: 'ETHUSDT' }],
   horizons: [5, 15],
   historyDays: numEnv(ENV.HISTORY_DAYS, 120),     // скільки історії для навчання й перевірки
-  gateLb: numEnv(ENV.GATE_LB, 0.52),              // потік вмикається, якщо нижня межа (99%) влучності на holdout вища за це
+  gateLb: numEnv(ENV.GATE_LB, Math.max(0.52, 1 / PAYOUT)),   // потік вмикається, лише якщо нижня межа (99%) влучності на holdout вища за беззбитковість виплати (1 ÷ виплата)
   minBets: numEnv(ENV.MIN_BETS, 200),             // мінімум незалежних ставок на holdout
-  payout: numEnv(ENV.PAYOUT, 1.9),                // лише для оцінки результату у звітах, сигнали від нього не залежать
+  payout: PAYOUT,
+  liveMin: numEnv(ENV.LIVE_MIN, 300),             // скільки перевірених живих результатів потрібно, щоб потік увімкнувся за живим журналом
   maxPerHour: numEnv(ENV.MAX_PER_HOUR, 6),        // не більше стількох надісланих сигналів за годину
   maxMinutes: numEnv(ENV.MAX_MINUTES, 345),       // скільки хвилин працює один запуск монітора (ліміт GitHub — 360)
   notifyResults: ENV.NOTIFY_RESULTS !== '0',
+  quiet: ENV.QUIET_HOURS !== undefined ? ENV.QUIET_HOURS : '23-8',      // тихі години за Києвом «з-до»: сигнали не надсилаються, журнал рахує далі
   binance: ENV.BINANCE_BASE ? [ENV.BINANCE_BASE] : ['https://data-api.binance.vision', 'https://api-gcp.binance.com', 'https://api.binance.com'],
   tgBase: ENV.TELEGRAM_API_BASE || 'https://api.telegram.org',
   ghBase: ENV.GITHUB_API_BASE || 'https://api.github.com',
@@ -205,6 +206,7 @@ export const CFG = {
 };
 export const STREAMS = CFG.assets.flatMap(a => CFG.horizons.map(h => ({ key: a.id + h, asset: a.id, sym: a.sym, h })));
 export const GATE_Z = 2.326;      // 99% (одностороння) нижня межа
+const SHIFTS = [0, 720, 1440];   // зсуви кінця історії (хв): перевага має триматися щонайменше у 2 з 3 вікон
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -214,6 +216,15 @@ const money = x => '$' + x.toLocaleString('en-US', { minimumFractionDigits: 2, m
 const tKyiv = ms => new Date(ms).toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit' });
 const dtKyiv = ms => new Date(ms).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const label = s => `${s.asset} · ${s.h} хв`;
+const kyivFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kyiv', hour: 'numeric', hourCycle: 'h23' });
+export const kyivHour = ms => +kyivFmt.format(new Date(ms));
+// Чи припадає момент на тихі години (діапазон «з-до», година «до» не входить; «0-0» вимикає)
+export function inQuiet(ms) {
+  const [a, b] = String(CFG.quiet).split('-').map(Number);
+  if (!(a >= 0 && a < 24 && b >= 0 && b < 24) || a === b) return false;
+  const h = kyivHour(ms);
+  return a < b ? (h >= a && h < b) : (h >= a || h < b);
+}
 const streamOf = key => STREAMS.find(s => s.key === key);
 
 // ---------- мережа ----------
@@ -229,6 +240,7 @@ export async function http(url, opts = {}, tries = 3) {
   throw last;
 }
 let binanceIdx = 0; // запам'ятовуємо дзеркало, яке працює
+export const mirrorInUse = () => CFG.binance[binanceIdx];
 export async function klines(sym, end, limit) {
   let last;
   for (let k = 0; k < CFG.binance.length; k++) {
@@ -321,7 +333,7 @@ export async function sendTG(text) {
 }
 
 // ---------- навчання і перевірка ----------
-export function trainStream(S, X, h, now = Date.now(), prevEnabled = false) {
+export function trainStream(S, X, h, now = Date.now(), prevEnabled = false, final = true) {
   const wf = walkForward(S, X, h);
   const N = wf.ps.length;
   if (N < 20000) return { h, enabled: false, reason: 'замало історії для перевірки' };
@@ -331,12 +343,15 @@ export function trainStream(S, X, h, now = Date.now(), prevEnabled = false) {
   const lb99 = wilson(sel.test.hit, sel.test.n, GATE_Z)[0];
   const maj = Math.max(sel.test.base, 1 - sel.test.base);
   // остаточна модель: усі розмічені дані
-  const tr = [], yy = [], last = S.n - 1 - h;
-  for (let i = WARM; i <= last; i += 2) { const y = labelAt(S, i, h); if (y < 0) continue; tr.push(i); yy.push(y); }
-  const model = fitLR(X, tr, yy);
+  let model = null;
+  if (final) {
+    const tr = [], yy = [], last = S.n - 1 - h;
+    for (let i = WARM; i <= last; i++) { const y = labelAt(S, i, h); if (y < 0) continue; tr.push(i); yy.push(y); }   // усі рядки: оцінка не залежить від зсуву початку історії
+    model = fitLR(X, tr, yy, { iters: 100 });
+  }
   let reason = '';
   if (sel.test.n < CFG.minBets) reason = `замало ставок на перевірці (${sel.test.n} < ${CFG.minBets})`;
-  else if (lb99 <= (prevEnabled ? CFG.gateLb - 0.01 : CFG.gateLb)) reason = `нижня межа ${pct(lb99)} не вища за ${pct(prevEnabled ? CFG.gateLb - 0.01 : CFG.gateLb, 0)}`;
+  else if (lb99 <= (prevEnabled ? CFG.gateLb - 0.01 : CFG.gateLb)) reason = `нижня межа ${pct(lb99)} не вища за ${pct(prevEnabled ? CFG.gateLb - 0.01 : CFG.gateLb, 1)}`;
   else if (sel.test.acc <= maj + 0.01) reason = 'не краща за просте «завжди в бік тренду»';
   const ci = wilson(all.hit, all.n);
   return {
@@ -349,20 +364,29 @@ export function trainStream(S, X, h, now = Date.now(), prevEnabled = false) {
 export function trainAll(hist, now = Date.now(), prev = null) {
   const streams = {};
   for (const a of CFG.assets) {
-    const S = computeSeries(hist[a.id]), X = featureMatrix(S);
+    const cs = hist[a.id], S = computeSeries(cs), X = featureMatrix(S);
+    const shifted = SHIFTS.filter(o => o > 0).map(o => { const Ss = computeSeries(cs.slice(0, cs.length - o)); return [Ss, featureMatrix(Ss)]; });
     for (const h of CFG.horizons) {
       log(`навчання ${a.id} ${h} хв…`);
-      streams[a.id + h] = { asset: a.id, ...trainStream(S, X, h, now, !!(prev && prev.streams && prev.streams[a.id + h] && prev.streams[a.id + h].enabled)) };
+      const prevEn = !!(prev && prev.streams && prev.streams[a.id + h] && prev.streams[a.id + h].enabled);
+      const main = trainStream(S, X, h, now, prevEn, true);
+      const rest = shifted.map(([Ss, Xs]) => trainStream(Ss, Xs, h, now, prevEn, false));
+      const all = [main, ...rest];
+      const passes = all.filter(x => x.reason === '').length;
+      if (main.reason === '' && passes < SHIFTS.length - 1) { main.enabled = false; main.reason = `перевага нестабільна: пройшла ${passes} із ${SHIFTS.length} перевірок`; }
+      main.stab = { passes, of: SHIFTS.length, lbs: all.map(x => (x.test ? +x.test.lb99.toFixed(4) : null)) };
+      streams[a.id + h] = { asset: a.id, ...main };
     }
   }
   const any = hist[CFG.assets[0].id];
-  return { version: 1, trained: now, historyDays: CFG.historyDays, range: { from: any[0][0], to: any[any.length - 1][0] }, gate: { lb: CFG.gateLb, z: GATE_Z, minBets: CFG.minBets }, streams };
+  return { version: 1, trained: now, historyDays: CFG.historyDays, source: mirrorInUse(), candles: Object.fromEntries(CFG.assets.map(a => [a.id, hist[a.id].length])), range: { from: any[0][0], to: any[any.length - 1][0] }, gate: { lb: CFG.gateLb, z: GATE_Z, minBets: CFG.minBets }, streams };
 }
 
 // ---------- повідомлення ----------
-function signalText(e, sm) {
+function signalText(e, sm, lv) {
   const s = streamOf(e.key), up = e.dir === 'up';
-  const minPay = 1 / sm.test.lb99;
+  const byBacktest = sm.enabled || !lv || !(lv.n >= CFG.liveMin);
+  const minPay = 1 / (byBacktest ? sm.test.lb99 : lv.lb);
   return [
     `🔔 СИГНАЛ · ${label(s)}`,
     `Напрямок: ${up ? '↑ ВГОРУ' : '↓ ВНИЗ'}`,
@@ -370,7 +394,9 @@ function signalText(e, sm) {
     `Експірація: ${tKyiv(e.t0 + e.h * MIN)} (Київ)`,
     `Впевненість моделі: ${pct(up ? e.pUp : 1 - e.pUp)}`,
     '',
-    `Перевірка наперед (${sm.oos.days} днів, без підглядання): при такій впевненості влучність ${pct(sm.test.acc)}, нижня межа ${pct(sm.test.lb99)} (n=${sm.test.n}).`,
+    byBacktest
+      ? `Перевірка наперед (${sm.oos.days} днів, без підглядання): при такій впевненості влучність ${pct(sm.test.acc)}, нижня межа ${pct(sm.test.lb99)} (n=${sm.test.n}).`
+      : `Живий журнал цього потоку: ${lv.w} з ${lv.n} (${pct(lv.acc)}), нижня межа ${pct(lv.lb)}. Це перевірка в реальному часі, без підгонки.`,
     `Має сенс, лише якщо виплата Odds ≥ ${minPay.toFixed(2)}×. Менша виплата: пропусти.`,
     '',
     'Це ймовірнісний сигнал, а не гарантія. Став лише те, що готовий втратити.',
@@ -383,12 +409,14 @@ function resultText(e) {
 export function summaryText(model, live, now = Date.now()) {
   const L = [`📊 Щоденний звіт · ${dtKyiv(now)} (Київ)`, ''];
   L.push(`Моніторинг: ${live.heartbeat ? `працює, останнє оновлення ${tKyiv(live.heartbeat)}` : 'ще не запускався'}`);
+  L.push(`Виплата Odds ${CFG.payout}×: беззбитковість ${pct(1 / CFG.payout)}. Потік вмикається, лише коли нижня межа влучності на невидимих даних вища за ${pct(CFG.gateLb)}.`);
   L.push(`Моделі навчені ${dtKyiv(model.trained)} на ${model.historyDays} днях. Перевірка наперед, ставки не частіше, ніж раз на горизонт:`);
   for (const s of STREAMS) {
     const m = model.streams[s.key];
     if (!m) continue;
-    if (m.enabled) L.push(`• ${label(s)}: ✅ увімкнено. На перевірці ${pct(m.test.acc)} (n=${m.test.n}), нижня межа ${pct(m.test.lb99)}, поріг впевненості ${pct(m.tau, 0)}.`);
-    else L.push(`• ${label(s)}: ⛔ вимкнено, ${m.reason}.`);
+    if (m.enabled) L.push(`• ${label(s)}: ✅ увімкнено. На перевірці ${pct(m.test.acc)} (n=${m.test.n}), нижня межа ${pct(m.test.lb99)}, поріг впевненості ${pct(m.tau, 0)}${m.stab ? `, стабільність ${m.stab.passes}/${m.stab.of}` : ''}.`);
+    else if (liveStatsOf(live.journal, s.key).n >= CFG.liveMin && liveStatsOf(live.journal, s.key).lb > 1 / CFG.payout) L.push(`• ${label(s)}: ✅ увімкнено за живим журналом (нижня межа ${pct(liveStatsOf(live.journal, s.key).lb)}).`);
+    else L.push(`• ${label(s)}: ⛔ вимкнено, ${m.reason}${m.stab ? ` (вікна: ${m.stab.lbs.map(v => v == null ? '–' : pct(v, 0)).join('/')})` : ''}.`);
   }
   L.push('', 'Живий журнал (рахуються всі кандидати, навіть від вимкнених потоків):');
   let sent = 0, sentWins = 0, sentN = 0;
@@ -404,13 +432,15 @@ export function summaryText(model, live, now = Date.now()) {
   const dayRes = day.filter(e => e.status === 'win' || e.status === 'loss');
   const dayWins = dayRes.filter(e => e.status === 'win').length;
   L.push('', `За добу надіслано сигналів: ${day.length}${dayRes.length ? `, з перевірених ${dayRes.length} вгадано ${dayWins}` : ''}.`);
+  const quietN = live.journal.filter(e => e.quiet && e.t0 > dayAgo).length;
+  if (quietN) L.push(`У тихі години (${CFG.quiet.replace('-', ':00–')}:00) не надіслано кандидатів: ${quietN} (вони рахуються в журналі).`);
   if (sentN) L.push(`Усього надісланих і перевірених: ${sentWins} з ${sentN}. Оцінка при виплаті ${CFG.payout}×: ${((sentWins * (CFG.payout - 1) - (sentN - sentWins))).toFixed(1)} ставок (довідково).`);
-  if (!STREAMS.some(s => model.streams[s.key] && model.streams[s.key].enabled)) L.push('', 'Зараз жоден потік не має доведеної переваги, тому сигналів немає. Це нормально: бот мовчить, коли переваги нема.');
+  if (!STREAMS.some(s => model.streams[s.key] && model.streams[s.key].enabled)) L.push('', `Зараз жоден потік не має доведеної переваги над виплатою ${CFG.payout}×, тому сигналів немає. Це нормально: бот мовчить, коли переваги нема, і веде тіньовий журнал кандидатів, щоб накопичити чесний доказ.`);
   L.push('', 'Ймовірнісний аналіз, жодної гарантії результату.');
   return L.join('\n');
 }
 function trainText(model, prev) {
-  const L = ['🧠 Моделі оновлено: змінився набір увімкнених потоків', ''];
+  const L = ['🧠 Моделі оновлено: змінився набір увімкнених потоків', `Дані: ${(model.source || '').replace('https://', '')}, свічок BTC ${model.candles ? model.candles.BTC : '?'} / ETH ${model.candles ? model.candles.ETH : '?'}, до ${model.range ? new Date(model.range.to).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : '?'}`, ''];
   for (const s of STREAMS) {
     const m = model.streams[s.key], p = prev && prev.streams && prev.streams[s.key];
     if (!m) continue;
@@ -421,6 +451,11 @@ function trainText(model, prev) {
 }
 
 // ---------- рушій сигналів (той самий код працює наживо і в replay) ----------
+export function liveStatsOf(journal, key, last = 400) {
+  const res = journal.filter(e => e.key === key && (e.status === 'win' || e.status === 'loss')).slice(-last);
+  const w = res.filter(e => e.status === 'win').length;
+  return { n: res.length, w, acc: res.length ? w / res.length : NaN, lb: res.length ? wilson(w, res.length, GATE_Z)[0] : 0 };
+}
 export const newLive = () => ({ version: 1, journal: [], last: {}, stats: {}, heartbeat: 0, started: 0, lastSummaryDay: '' });
 export class Engine {
   constructor(model, live, send) { this.model = model; this.live = live; this.send = send; this.dirty = false; }
@@ -430,6 +465,8 @@ export class Engine {
     const w = res.filter(e => e.status === 'win').length;
     return wilson(w, res.length)[1] < 0.52;      // живі результати вже не підтримують перевагу
   }
+  // Живий доказ: достатньо перевірених кандидатів, і нижня межа (99%) вища за беззбитковість виплати
+  liveProven(key) { const s = liveStatsOf(this.live.journal, key); return s.n >= CFG.liveMin && s.lb > 1 / CFG.payout; }
   sentLastHour(now) { return this.live.journal.filter(e => e.sent && e.t0 > now - 3600e3).length; }
   async resolve(S) {
     for (const e of this.live.journal) {
@@ -464,9 +501,10 @@ export class Engine {
       if (Math.abs(p - 0.5) < tau) continue;
       if (now - (this.live.last[st.key] || 0) < st.h * MIN) continue;   // не частіше, ніж раз на горизонт: результати незалежні
       this.live.last[st.key] = now;
-      const enabled = CFG.forceEnable || sm.enabled, blocked = this.liveBlocked(st.key);
-      const e = { id: `${st.key}-${now}`, key: st.key, asset: st.asset, h: st.h, t0: now, p0: A.c[i], pUp: +p.toFixed(4), dir: p >= 0.5 ? 'up' : 'down', enabled, blocked, sent: false, status: 'pending' };
-      if (enabled && !blocked && this.sentLastHour(now) < CFG.maxPerHour) { e.sent = true; await this.send(signalText(e, sm)); }
+      const proven = !sm.enabled && this.liveProven(st.key);
+      const enabled = CFG.forceEnable || sm.enabled || proven, blocked = this.liveBlocked(st.key), quiet = inQuiet(now);
+      const e = { id: `${st.key}-${now}`, key: st.key, asset: st.asset, h: st.h, t0: now, p0: A.c[i], pUp: +p.toFixed(4), dir: p >= 0.5 ? 'up' : 'down', enabled, blocked, quiet, sent: false, status: 'pending' };
+      if (enabled && !blocked && !quiet && this.sentLastHour(now) < CFG.maxPerHour) { e.sent = true; e.basis = sm.enabled ? 'backtest' : 'live'; await this.send(signalText(e, sm, liveStatsOf(this.live.journal, st.key))); }
       this.live.journal.push(e);
       this.dirty = true;
     }
@@ -495,7 +533,7 @@ export async function monitor() {
   const live = (await store.read('live.json')) || newLive();
   const engine = new Engine(model, live, sendTG);
   const t0 = Date.now(), deadline = t0 + CFG.maxMinutes * MIN;
-  if (!live.heartbeat) await sendTG(`✅ Моніторинг запущено. Стежу за BTC і ETH щохвилини; сигнал надішлю, коли модель матиме доведену перевагу.\nУвімкнені потоки: ${STREAMS.filter(s => model.streams[s.key] && model.streams[s.key].enabled).map(label).join(', ') || 'жодного (переваги поки немає)'}.`);
+  if (!live.heartbeat) await sendTG(`✅ Моніторинг запущено. Стежу за BTC і ETH щохвилини; сигнал надішлю, коли модель матиме доведену перевагу.\nУвімкнені потоки: ${STREAMS.filter(s => model.streams[s.key] && model.streams[s.key].enabled).map(label).join(', ') || 'жодного (переваги поки немає)'}.${CFG.quiet && CFG.quiet !== '0-0' ? `\nТихі години (Київ): ${CFG.quiet.replace('-', ':00–')}:00, у цей час сигнали не надсилаються.` : ''}`);
   else if (t0 - live.heartbeat > 15 * MIN) await sendTG(`⚠️ Була перерва в моніторингу ≈ ${Math.round((t0 - live.heartbeat) / MIN)} хв (перезапуск сервера). Сигнали за цей час пропущено.`);
   live.started = t0;
   let lastSave = 0, lastModel = t0, lastT = 0, failSince = 0, alerted = false;
