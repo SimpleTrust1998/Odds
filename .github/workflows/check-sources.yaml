@@ -1,0 +1,39 @@
+name: check-sources
+# Разова перевірка: які біржі відповідають із серверів GitHub (для хмарного бота з Telegram)
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Перевірка доступу до бірж
+        shell: bash
+        run: |
+          set +e
+          echo "Сервер GitHub: $(curl -s --max-time 10 https://ipinfo.io/json | tr -d '\n ' | head -c 160)"
+          echo "------------------------------------------------------------"
+          check() {
+            code=$(curl -s -o /tmp/r -w '%{http_code}' --max-time 15 "$2")
+            echo "$1 → HTTP $code · $(head -c 90 /tmp/r | tr -d '\n')"
+          }
+          Q='/v5/market/tickers?category=linear&symbol=BTCUSDT'
+          check "Bybit api.bybit.com    " "https://api.bybit.com$Q"
+          check "Bybit api.bytick.com   " "https://api.bytick.com$Q"
+          check "Bybit api.bybit.eu     " "https://api.bybit.eu$Q"
+          check "Bybit api.bybit.nl     " "https://api.bybit.nl$Q"
+          check "Bybit api.bybit.kz     " "https://api.bybit.kz$Q"
+          check "Bybit api.bybit-tr.com " "https://api.bybit-tr.com$Q"
+          check "Bybit api.bybitgeorgia " "https://api.bybitgeorgia.ge$Q"
+          check "Binance futures        " "https://fapi.binance.com/fapi/v1/ticker/price?symbol=BTCUSDT"
+          check "Binance data-api (spot)" "https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT"
+          check "OKX                    " "https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP"
+          check "Bitget                 " "https://api.bitget.com/api/v2/mix/market/ticker?symbol=BTCUSDT&productType=USDT-FUTURES"
+          check "Gate.io futures        " "https://api.gateio.ws/api/v4/futures/usdt/tickers?contract=BTC_USDT"
+          check "MEXC futures           " "https://contract.mexc.com/api/v1/contract/ticker?symbol=BTC_USDT"
+          check "KuCoin futures         " "https://api-futures.kucoin.com/api/v1/ticker?symbol=XBTUSDTM"
+          code=$(curl -s -o /tmp/r -w '%{http_code}' --max-time 15 -X POST -H 'Content-Type: application/json' -d '{"type":"allMids"}' https://api.hyperliquid.xyz/info)
+          echo "Hyperliquid             → HTTP $code · $(head -c 60 /tmp/r | tr -d '\n')"
+          check "Telegram               " "https://api.telegram.org/"
+          echo "------------------------------------------------------------"
+          echo "Готово. Зроби скріншот цього списку і надішли в чат."
