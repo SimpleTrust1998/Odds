@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Сигнали">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#101418">
+<title>Bybit Сигнали</title>
+<style>
+:root{
+  --bg:#f2f3ef;--card:#fff;--ink:#14181c;--mut:#5f6872;--line:#e1e4df;--soft:#eceee9;
+  --long:#0d8a4c;--longbg:#e3f4ea;--short:#c7362d;--shortbg:#fbe7e5;--acc:#1f4fd6;--warn:#8a5a00;--warnbg:#fff3d6;
+  --top:#101418;--topink:#f1f3f4;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0c0f12;--card:#161a1f;--ink:#eef0f2;--mut:#9aa3ad;--line:#272c33;--soft:#1d2228;
+  --long:#35c472;--longbg:#11281c;--short:#ff6156;--shortbg:#2e1513;--acc:#6b95ff;--warn:#f2c35b;--warnbg:#2b2310;
+}}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overflow-x:hidden;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+b,strong{font-weight:650}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--top);color:var(--topink);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.brand b{font-size:19px;letter-spacing:-.01em}
+.brand span{font-size:13px;opacity:.75}
+.stat{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.stat span{font-size:13px;opacity:.85;font-variant-numeric:tabular-nums}
+.prog{position:absolute;left:0;right:0;bottom:0;height:3px}
+.prog i{display:block;height:100%;width:0;background:var(--long);transition:width .25s}
+main{padding:12px 14px;max-width:760px;margin:0 auto}
+h1{font-size:24px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.01em}
+h2{font-size:15px;margin:22px 2px 10px;color:var(--mut);font-weight:650}
+.lead{color:var(--mut);margin:0 0 14px;font-size:15px}
+.mut{color:var(--mut)}.small{font-size:13px}
+.win{color:var(--long)}.loss{color:var(--short)}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:12px;padding:11px 16px;min-height:44px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5}
+.btn.sm{min-height:34px;padding:6px 14px;font-size:14px;background:#2b3138;color:#fff}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.danger{color:var(--short)}
+.btn:focus-visible,.cp:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sum div,.tiles div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 11px}
+.sum span,.tiles span{display:block;font-size:12px;color:var(--mut)}
+.sum b,.tiles b{font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+@media(min-width:560px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.scan{font-size:13px;color:var(--mut);margin:10px 2px 0}
+.alert{background:var(--shortbg);color:var(--short);border-radius:12px;padding:12px;margin:12px 0;font-size:14px}
+.empty,.quiet{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:22px 16px;text-align:center;margin:14px 0}
+.empty p,.quiet p{color:var(--mut);margin:6px 0 0;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 12px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.card.long{border-top:5px solid var(--long)}.card.short{border-top:5px solid var(--short)}
+.card.late{opacity:.82}
+.ch{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sym{font-size:22px;letter-spacing:-.01em}
+.tag{font-size:11px;color:var(--mut);background:var(--soft);border-radius:6px;padding:2px 6px;margin-left:8px;vertical-align:3px}
+.px{font-size:18px;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.ml{font-size:13px;color:var(--mut);margin:2px 0 0}
+.vd{display:flex;align-items:center;gap:10px;margin:12px 0 6px;padding:10px 12px;border-radius:12px}
+.long .vd{background:var(--longbg)}.short .vd{background:var(--shortbg)}
+.vd b{font-size:20px}.long .vd b{color:var(--long)}.short .vd b{color:var(--short)}
+.vd span{font-size:14px;flex:1}.vd i{font-style:normal;font-weight:650;font-variant-numeric:tabular-nums}
+.meter{height:6px;background:var(--soft);border-radius:4px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--acc)}
+.long .meter i{background:var(--long)}.short .meter i{background:var(--short)}
+.lv{margin:12px 0 4px}
+.lr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.lr:last-child{border-bottom:0}
+.lr dt{color:var(--mut);font-size:14px}
+.lr dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.lr dd small{font-weight:500;color:var(--mut);margin-left:4px}
+.lr.loss dd>span,.lr.loss dd>.cp{color:var(--short)}.lr.win dd>span,.lr.win dd>.cp{color:var(--long)}
+.cp{background:var(--soft);border:0;border-radius:8px;padding:6px 9px;min-height:34px;font-weight:650;cursor:pointer;font-variant-numeric:tabular-nums}
+.warn{list-style:none;margin:10px 0;padding:0}
+.warn li{background:var(--warnbg);color:var(--warn);border-radius:10px;padding:8px 10px;margin:6px 0;font-size:14px}
+.meta{font-size:13px;color:var(--mut);margin:10px 0 4px}
+.btl{font-size:13px;margin:6px 0;color:var(--mut)}
+.acts{margin:10px 0 4px}.done{color:var(--long);font-weight:600;font-size:14px}
+details summary{cursor:pointer;min-height:40px;display:flex;align-items:center;gap:8px;font-size:15px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+.card details summary{color:var(--acc);font-weight:600}
+.ck{list-style:none;margin:4px 0 6px;padding:0}
+.ck li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:14px;border-bottom:1px solid var(--line)}
+.ck li:last-child{border-bottom:0}
+.ck li b{width:18px;flex:none;text-align:center}
+.ck li span{flex:1}.ck li small{color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ck li.ok b{color:var(--long)}.ck li.no b{color:var(--short)}
+.ck em{font-style:normal;font-size:11px;color:var(--mut);background:var(--soft);border-radius:5px;padding:1px 5px;white-space:nowrap}
+.wl{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px 12px}
+.w{border-bottom:1px solid var(--line)}.w:last-child{border-bottom:0}
+.w summary{min-height:50px;flex-wrap:wrap;row-gap:0;padding:6px 0}
+.why{flex-basis:100%;font-size:12px;color:var(--mut);margin:-2px 0 2px}
+.w summary b{width:76px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.w summary .px{font-size:14px;font-weight:500;width:96px;flex:none;text-align:right}
+.mini{flex:1;height:6px;background:var(--soft);border-radius:4px;overflow:hidden}
+.mini i{display:block;height:100%}.mini i.l{background:var(--long)}.mini i.s{background:var(--short)}
+.hint{font-size:13px;width:78px;flex:none;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wd{padding:0 0 10px}.wd p{margin:4px 0;font-size:13px}
+.err{color:var(--short);font-size:13px}
+.eq{width:100%;height:120px;display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;margin:6px 0}
+.eq polyline{fill:none;stroke-width:2.5}.eq .up{stroke:var(--long)}.eq .dn{stroke:var(--short)}
+.eq .zero{stroke:var(--line);stroke-width:1;stroke-dasharray:4 4}
+.verdict{background:var(--card);border-left:4px solid var(--acc);border-radius:10px;padding:10px 12px;font-size:15px}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;font-size:14px;font-variant-numeric:tabular-nums}
+.tbl th,.tbl td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{font-size:12px;color:var(--mut);font-weight:600}
+.tl{list-style:none;padding:0;margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tl li{display:grid;grid-template-columns:74px minmax(0,1fr) 44px 50px 56px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px;font-variant-numeric:tabular-nums;align-items:baseline}
+.tl li b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl li:last-child{border-bottom:0}.tl li>*:last-child{text-align:right}
+.je{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:14px;padding:10px 12px;margin:8px 0;font-size:14px}
+.je.win{border-left-color:var(--long)}.je.loss{border-left-color:var(--short)}.je.open{border-left-color:var(--acc)}
+.jh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}.jh .st{margin-left:auto;font-size:13px;color:var(--mut)}
+.jb{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--mut);font-size:13px;margin:4px 0;font-variant-numeric:tabular-nums}
+.jf{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.x{margin-left:auto;background:none;border:0;color:var(--mut);font-size:13px;min-height:36px;cursor:pointer}
+.grp{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 14px 10px;margin:0 0 12px}
+fieldset.grp legend{font-weight:650;padding:0 6px;font-size:15px}
+details.grp summary{font-weight:650}
+.fld{padding:10px 0;border-bottom:1px solid var(--line)}.fld:last-child{border-bottom:0}
+.fld label{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+.fld input[type=number],.fld input[type=text],.fld select{width:100%;font-size:16px;padding:10px 12px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.fld small{display:block;color:var(--mut);font-size:13px;margin-top:5px}
+.fld.chk{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:12px}
+.fld.chk label{margin:0}.fld.chk small{grid-column:1/-1}
+.fld.chk input{width:26px;height:26px;accent-color:var(--long)}
+.help h2{color:var(--ink);font-size:17px}
+.help p,.help li{font-size:15px}
+.help ol,.help ul{padding-left:22px}.help li{margin:5px 0}
+.help .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 16px;margin:10px 0}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--card);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+.tabs button{background:none;border:0;min-height:52px;font-size:12.5px;color:var(--mut);position:relative;cursor:pointer;border-radius:10px}
+.tabs button.on{color:var(--ink);font-weight:700;background:var(--soft)}
+.tabs em{display:inline-block;vertical-align:1px;margin-left:3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--long);color:#fff;font-size:11px;font-style:normal;line-height:17px;font-weight:700}
+.tabs em:empty{display:none}
+.toast{position:fixed;left:14px;right:14px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:9;background:#1d232a;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:reduce){.prog i{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>Bybit Сигнали</b><span id="mode"></span></div>
+  <div class="stat"><span id="status">Завантаження…</span><button class="btn sm" data-act="scan">Оновити</button></div>
+  <div class="prog"><i id="prog"></i></div>
+</header>
+<main>
+  <section id="v-sig" class="view"></section>
+  <section id="v-bt" class="view" hidden></section>
+  <section id="v-jr" class="view" hidden></section>
+  <section id="v-set" class="view" hidden></section>
+  <section id="v-help" class="view help" hidden>
+    <h1>Як користуватись</h1>
+    <p class="lead">Бот нічого не купує сам і не бачить твій рахунок. Він бере публічні ціни Bybit, шукає ситуації з перевагою і підказує план угоди.</p>
+    <div class="box">
+      <h2>Що він робить</h2>
+      <ol>
+        <li>Раз на хвилину і після закриття кожної свічки перевіряє <b>усі</b> USDT-монети Bybit.</li>
+        <li>Відкидає монети з малим обігом і великим спредом.</li>
+        <li>Бере найволатильніші й шукає: тренд старшого таймфрейму + пробій або відскок від EMA20 + великий обсяг + імпульс.</li>
+        <li>Рахує стоп, тейк і кількість так, щоб програш був не більший за твій ризик (за замовчуванням 1% балансу).</li>
+      </ol>
+    </div>
+    <div class="box">
+      <h2>Як відкрити угоду на Bybit</h2>
+      <ol>
+        <li>Bybit → <b>Деривативи → USDT безстрокові</b> (Derivatives → USDT Perpetual) → знайди монету.</li>
+        <li>Маржа <b>Ізольована</b> (Isolated), плече — як на картці.</li>
+        <li>Тип ордера <b>Ринковий</b> (Market). Кількість — з картки, у монетах. Натисни на число на картці — воно скопіюється.</li>
+        <li>Увімкни <b>TP/SL</b> і впиши тейк-профіт і стоп-лосс з картки.</li>
+        <li>LONG → «Купити/Long», SHORT → «Продати/Short».</li>
+        <li>Стоп далі не пересувай. Якщо за час з картки нічого не спрацювало — закрий угоду вручну.</li>
+      </ol>
+    </div>
+    <div class="box">
+      <h2>Правила, які бережуть гроші</h2>
+      <ul>
+        <li>Спочатку 1–2 тижні дивись <b>Журнал</b> (віртуально) або торгуй у Demo Trading Bybit.</li>
+        <li>Не більше 3 угод одночасно. Після 3 стопів поспіль — перерва до завтра.</li>
+        <li>Не входь, якщо на картці жовте попередження «ціна вже пішла».</li>
+        <li>Ризик більше 2% на угоду швидко зливає депозит навіть у хорошої стратегії.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h2>Важливо знати</h2>
+      <ul>
+        <li>Сигнал — це ймовірність, а не обіцянка. Частина угод завжди закривається стопом.</li>
+        <li>Волатильні монети дають швидкий прибуток і так само швидкий збиток.</li>
+        <li>Бот працює, тільки поки сторінка відкрита на екрані. Якщо згорнути Safari — оновлення зупиняються.</li>
+        <li>Перевірка на історії показує минуле. Минулий плюс не гарантує майбутнього.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<nav class="tabs">
+  <button data-v="sig" class="on">Сигнали<em id="nSig"></em></button>
+  <button data-v="bt">Перевірка</button>
+  <button data-v="jr">Журнал<em id="nJr"></em></button>
+  <button data-v="set">Налашт.</button>
+  <button data-v="help">Довідка</button>
+</nav>
+<div id="toast" class="toast" hidden></div>
+<script>
+// ===== CORE: чисті функції без DOM (індикатори, сигнали, розмір позиції, симуляція) =====
+var Core = (function () {
+  'use strict';
+
+  var TF_MS = { '1': 60000, '3': 180000, '5': 300000, '15': 900000, '60': 3600000, '240': 14400000 };
+  var HTF_OF = { '1': '5', '3': '15', '5': '15', '15': '60', '60': '240' };
+  var FEE = { linear: 0.00055, spot: 0.001 };   // taker, Bybit non-VIP
+  var SLIP = 0.0003;                            // 0.03% проковзування на вхід і вихід
+
+  function nanArr(n) { var a = new Array(n); for (var i = 0; i < n; i++) a[i] = NaN; return a; }
+
+  function ema(src, p) {
+    var n = src.length, out = nanArr(n), f = 0;
+    while (f < n && !isFinite(src[f])) f++;
+    if (n - f < p) return out;
+    var s = 0, i;
+    for (i = f; i < f + p; i++) s += src[i];
+    var prev = s / p, k = 2 / (p + 1);
+    out[f + p - 1] = prev;
+    for (i = f + p; i < n; i++) { prev = (src[i] - prev) * k + prev; out[i] = prev; }
+    return out;
+  }
+
+  function sma(src, p) {
+    var n = src.length, out = nanArr(n), s = 0;
+    for (var i = 0; i < n; i++) {
+      s += src[i];
+      if (i >= p) s -= src[i - p];
+      if (i >= p - 1) out[i] = s / p;
+    }
+    return out;
+  }
+
+  function rsiCalc(g, l) { return l === 0 ? (g === 0 ? 50 : 100) : 100 - 100 / (1 + g / l); }
+
+  function rsi(c, p) {
+    var n = c.length, out = nanArr(n);
+    if (n <= p) return out;
+    var g = 0, l = 0, i, d;
+    for (i = 1; i <= p; i++) { d = c[i] - c[i - 1]; if (d > 0) g += d; else l -= d; }
+    g /= p; l /= p; out[p] = rsiCalc(g, l);
+    for (i = p + 1; i < n; i++) {
+      d = c[i] - c[i - 1];
+      g = (g * (p - 1) + (d > 0 ? d : 0)) / p;
+      l = (l * (p - 1) + (d < 0 ? -d : 0)) / p;
+      out[i] = rsiCalc(g, l);
+    }
+    return out;
+  }
+
+  function trueRange(h, l, c, i) {
+    if (i === 0) return h[0] - l[0];
+    return Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1]));
+  }
+
+  function atr(h, l, c, p) {
+    var n = c.length, out = nanArr(n);
+    if (n <= p) return out;
+    var s = 0, i;
+    for (i = 1; i <= p; i++) s += trueRange(h, l, c, i);
+    var prev = s / p; out[p] = prev;
+    for (i = p + 1; i < n; i++) { prev = (prev * (p - 1) + trueRange(h, l, c, i)) / p; out[i] = prev; }
+    return out;
+  }
+
+  function macdHist(c, f, s, sig) {
+    var ef = ema(c, f), es = ema(c, s), n = c.length, line = nanArr(n), i;
+    for (i = 0; i < n; i++) if (isFinite(ef[i]) && isFinite(es[i])) line[i] = ef[i] - es[i];
+    var sg = ema(line, sig), hist = nanArr(n);
+    for (i = 0; i < n; i++) if (isFinite(line[i]) && isFinite(sg[i])) hist[i] = line[i] - sg[i];
+    return hist;
+  }
+
+  function adx(h, l, c, p) {
+    var n = c.length, out = nanArr(n);
+    if (n < 2 * p + 1) return out;
+    var sTR = 0, sP = 0, sM = 0, dx = nanArr(n), i;
+    function dm(i) {
+      var up = h[i] - h[i - 1], dn = l[i - 1] - l[i];
+      return [up > dn && up > 0 ? up : 0, dn > up && dn > 0 ? dn : 0];
+    }
+    for (i = 1; i <= p; i++) { var d = dm(i); sTR += trueRange(h, l, c, i); sP += d[0]; sM += d[1]; }
+    function dxAt() {
+      if (sTR <= 0) return 0;
+      var pdi = 100 * sP / sTR, mdi = 100 * sM / sTR;
+      return pdi + mdi === 0 ? 0 : 100 * Math.abs(pdi - mdi) / (pdi + mdi);
+    }
+    dx[p] = dxAt();
+    for (i = p + 1; i < n; i++) {
+      var d2 = dm(i);
+      sTR = sTR - sTR / p + trueRange(h, l, c, i);
+      sP = sP - sP / p + d2[0];
+      sM = sM - sM / p + d2[1];
+      dx[i] = dxAt();
+    }
+    var s = 0;
+    for (i = p; i < 2 * p; i++) s += dx[i];
+    var prev = s / p; out[2 * p - 1] = prev;
+    for (i = 2 * p; i < n; i++) { prev = (prev * (p - 1) + dx[i]) / p; out[i] = prev; }
+    return out;
+  }
+
+  // Bybit /v5/market/kline: list = [[start, open, high, low, close, volume, turnover], ...] (новіші першими)
+  function parseKlines(list) {
+    var arr = list.slice().sort(function (a, b) { return Number(a[0]) - Number(b[0]); });
+    var cd = { t: [], o: [], h: [], l: [], c: [], v: [] }, last = -1;
+    for (var i = 0; i < arr.length; i++) {
+      var t = Number(arr[i][0]);
+      if (t === last) continue;
+      last = t;
+      cd.t.push(t); cd.o.push(+arr[i][1]); cd.h.push(+arr[i][2]); cd.l.push(+arr[i][3]);
+      cd.c.push(+arr[i][4]); cd.v.push(+arr[i][5]);
+    }
+    return cd;
+  }
+
+  function indicators(cd) {
+    return {
+      e20: ema(cd.c, 20), e50: ema(cd.c, 50),
+      rsi: rsi(cd.c, 14), atr: atr(cd.h, cd.l, cd.c, 14),
+      mh: macdHist(cd.c, 12, 26, 9), adx: adx(cd.h, cd.l, cd.c, 14),
+      vs: sma(cd.v, 20)
+    };
+  }
+
+  // Тренд старшого таймфрейму: 1 вгору, -1 вниз, 0 невизначений
+  function htfTrend(cd, ind) {
+    var n = cd.c.length, out = new Array(n);
+    for (var k = 0; k < n; k++) {
+      var c = cd.c[k], a = ind.e20[k], b = ind.e50[k];
+      if (!isFinite(a) || !isFinite(b)) { out[k] = 0; continue; }
+      out[k] = (c > b && a > b) ? 1 : (c < b && a < b) ? -1 : 0;
+    }
+    return out;
+  }
+
+  // Для кожної свічки молодшого ТФ — індекс останньої ЗАКРИТОЇ свічки старшого ТФ
+  function mapHtf(cd, tfMs, htf, htfMs) {
+    var n = cd.t.length, out = new Array(n), k = -1;
+    for (var i = 0; i < n; i++) {
+      var closeT = cd.t[i] + tfMs;
+      while (k + 1 < htf.t.length && htf.t[k + 1] + htfMs <= closeT) k++;
+      out[i] = k;
+    }
+    return out;
+  }
+
+  function maxHigh(cd, from, to) { var m = -Infinity; for (var j = from; j <= to; j++) if (cd.h[j] > m) m = cd.h[j]; return m; }
+  function minLow(cd, from, to) { var m = Infinity; for (var j = from; j <= to; j++) if (cd.l[j] < m) m = cd.l[j]; return m; }
+
+  function f1(x) { return isFinite(x) ? x.toFixed(1) : '—'; }
+
+  // Оцінка однієї сторони (dir = 1 LONG, -1 SHORT) на закритій свічці i
+  function evalSide(cd, ind, i, ht, dir, o) {
+    var c = cd.c[i], a = ind.atr[i], e20 = ind.e20[i], e50 = ind.e50[i];
+    var r = ind.rsi[i], mh = ind.mh[i], mhp = ind.mh[i - 1], ax = ind.adx[i], vs = ind.vs[i];
+    var L = dir === 1, checks = [], score = 0;
+    function add(ok, pts, text, req, sh) { checks.push({ ok: !!ok, pts: pts, text: text, req: !!req, sh: sh }); if (ok) score += pts; }
+
+    add(ht === dir, 25, L ? 'Тренд старшого ТФ — вгору' : 'Тренд старшого ТФ — вниз', true, 'тренд');
+    add(L ? (e20 > e50 && c > e50) : (e20 < e50 && c < e50), 15, L ? 'Робочий ТФ: EMA20 вище EMA50' : 'Робочий ТФ: EMA20 нижче EMA50', false, 'EMA');
+
+    var lb = o.breakLookback, brk = false, pull = false, trigText;
+    var lvl = L ? maxHigh(cd, i - lb, i - 1) : minLow(cd, i - lb, i - 1);
+    brk = L ? c > lvl : c < lvl;
+    for (var k = i - 4; k <= i - 1; k++) {
+      if (L ? cd.l[k] <= ind.e20[k] + 0.25 * ind.atr[k] : cd.h[k] >= ind.e20[k] - 0.25 * ind.atr[k]) pull = true;
+    }
+    var candleOk = L ? (c > cd.o[i] && c > cd.c[i - 1] && c > e20) : (c < cd.o[i] && c < cd.c[i - 1] && c < e20);
+    var trig = candleOk && (brk || pull);
+    trigText = brk ? (L ? 'Пробій максимуму ' + lb + ' свічок' : 'Пробій мінімуму ' + lb + ' свічок')
+      : pull ? (L ? 'Відскок від EMA20 після відкату' : 'Відскок вниз від EMA20 після відкату')
+        : (L ? 'Немає пробою чи відскоку вгору' : 'Немає пробою чи відскоку вниз');
+    add(trig, 15, trigText, true, 'пробій/відскок');
+
+    var vr = vs > 0 ? cd.v[i] / vs : 0;
+    add(vr >= o.volMult, 15, 'Обсяг ×' + f1(vr) + ' від середнього (треба ≥ ' + o.volMult + ')', false, 'обсяг');
+    add(L ? (r >= 50 && r <= 78) : (r <= 50 && r >= 22), 10, 'RSI ' + f1(r) + (L ? ' (норма 50–78)' : ' (норма 22–50)'), false, 'RSI');
+    add(L ? (mh > 0 && mh > mhp) : (mh < 0 && mh < mhp), 10, L ? 'MACD росте' : 'MACD падає', false, 'MACD');
+    add(ax >= 20, 10, 'Сила руху ADX ' + f1(ax) + ' (треба ≥ 20)', false, 'сила руху');
+
+    var ext = a > 0 ? (L ? c - e20 : e20 - c) / a : 99;
+    add(ext <= o.maxExt, 0, 'Ціна не задалеко від EMA20 (' + f1(ext) + ' ATR, макс ' + o.maxExt + ')', true, 'ціна задалеко');
+    var stopPct = a * o.slAtr / c * 100;
+    add(stopPct >= o.minStopPct, 0, 'Стоп ' + stopPct.toFixed(2) + '% — достатньо, щоб комісія не з\'їла прибуток', true, 'вузький стоп');
+
+    var reqOk = checks.every(function (x) { return !x.req || x.ok; });
+    return { dir: dir, score: score, checks: checks, signal: reqOk && score >= o.minScore, atr: a, close: c, stopPct: stopPct };
+  }
+
+  // Повна оцінка на свічці i: обирає сторону за трендом старшого ТФ
+  function evaluate(cd, ind, i, ht, o) {
+    var need = Math.max(60, o.breakLookback + 2);
+    if (i < need || !isFinite(ind.adx[i]) || !isFinite(ind.e50[i]) || !isFinite(ind.mh[i - 1])) {
+      return { ready: false, signal: false, dir: 0, score: 0, checks: [] };
+    }
+    var L = evalSide(cd, ind, i, ht, 1, o), S = evalSide(cd, ind, i, ht, -1, o), best;
+    if (o.market === 'spot') { S.signal = false; S.spotBlocked = true; }
+    if (L.signal && !S.signal) best = L;
+    else if (S.signal && !L.signal) best = S;
+    else best = ht === -1 ? S : ht === 1 ? L : (S.score > L.score ? S : L);
+    best.ready = true;
+    return best;
+  }
+
+  function levels(dir, entry, a, o) {
+    var risk = a * o.slAtr;
+    return { entry: entry, sl: entry - dir * risk, tp: entry + dir * risk * o.tpR, risk: risk };
+  }
+
+  function stepDec(step) { if (!(step > 0) || step >= 1) return 0; return Math.min(10, Math.ceil(-Math.log10(step) - 1e-9)); }
+  function roundStep(x, step) { if (!(step > 0)) return x; var d = stepDec(step); return +(Math.floor(x / step + 1e-9) * step).toFixed(d); }
+  function roundTick(x, tick) { if (!(tick > 0)) return x; var d = stepDec(tick); return +(Math.round(x / tick) * tick).toFixed(d); }
+
+  // Розмір позиції під фіксований ризик
+  function sizing(dir, lv, o, inst) {
+    var fee = FEE[o.market] || FEE.linear;
+    var riskUsd = o.balance * o.riskPct / 100;
+    var perUnit = Math.abs(lv.entry - lv.sl) + lv.entry * (fee * 2 + SLIP * 2);
+    var qty = riskUsd / perUnit;
+    var maxLev = o.market === 'spot' ? 1 : o.maxLev;
+    var maxNotional = o.balance * maxLev / o.maxOpen;
+    var capped = false;
+    if (qty * lv.entry > maxNotional) { qty = maxNotional / lv.entry; capped = true; }
+    var step = inst && inst.qtyStep > 0 ? inst.qtyStep : 0;
+    if (step) qty = roundStep(qty, step);
+    var minQty = inst && inst.minQty > 0 ? inst.minQty : 0;
+    var notional = qty * lv.entry;
+    var lev = o.market === 'spot' ? 1 : Math.max(1, Math.min(maxLev, Math.ceil(notional * o.maxOpen / o.balance - 1e-9)));
+    var margin = notional / lev;
+    var realRisk = qty * perUnit;
+    var profit = qty * Math.abs(lv.tp - lv.entry) - qty * (lv.entry + lv.tp) * (fee + SLIP);
+    var liq = (o.market === 'spot' || lev <= 1) ? null : lv.entry * (1 - dir / lev + dir * 0.01);
+    return {
+      qty: qty, notional: notional, lev: lev, margin: margin, riskUsd: realRisk, plannedRisk: riskUsd,
+      profit: profit, capped: capped, tooSmall: qty <= 0 || (minQty > 0 && qty < minQty), minQty: minQty, liq: liq
+    };
+  }
+
+  // Прохід свічками після входу. i0 — перша свічка після входу.
+  // lastIdx — остання свічка для перевірки торкання; lastClosed — остання ЗАКРИТА (для тайм-ауту)
+  function simulate(cd, dir, i0, entry, sl, tp, maxBars, lastIdx, lastClosed) {
+    var end = Math.min(lastIdx, i0 + maxBars - 1);
+    for (var j = i0; j <= end; j++) {
+      var hitSL = dir === 1 ? cd.l[j] <= sl : cd.h[j] >= sl;
+      var hitTP = dir === 1 ? cd.h[j] >= tp : cd.l[j] <= tp;
+      if (hitSL) return { res: 'loss', exit: sl, j: j };      // обидва в одній свічці — рахуємо як збиток
+      if (hitTP) return { res: 'win', exit: tp, j: j };
+    }
+    var tj = i0 + maxBars - 1;
+    if (tj <= lastClosed) return { res: 'time', exit: cd.c[tj], j: tj };
+    return { res: 'open', exit: null, j: end };
+  }
+
+  function resultR(dir, entry, exit, risk, market) {
+    var fee = FEE[market] || FEE.linear;
+    var gross = dir * (exit - entry) / risk;
+    var costs = (entry + exit) * (fee + SLIP) / risk;
+    return gross - costs;
+  }
+
+  // Перевірка стратегії на історії однієї монети
+  function backtest(cd, htf, tf, o) {
+    var tfMs = TF_MS[tf], htfMs = TF_MS[HTF_OF[tf]];
+    var ind = indicators(cd), hInd = indicators(htf), tr = htfTrend(htf, hInd), map = mapHtf(cd, tfMs, htf, htfMs);
+    var n = cd.c.length, lastClosed = n - 2, trades = [], i = 60;
+    while (i <= lastClosed - 1) {
+      var ht = map[i] >= 0 ? tr[map[i]] : 0;
+      var ev = evaluate(cd, ind, i, ht, o);
+      if (ev.signal) {
+        var entry = cd.o[i + 1];
+        var lv = levels(ev.dir, entry, ev.atr, o);
+        var sim = simulate(cd, ev.dir, i + 1, entry, lv.sl, lv.tp, o.maxBars, lastClosed, lastClosed);
+        if (sim.res === 'open') break;
+        trades.push({
+          t: cd.t[i + 1], dir: ev.dir, entry: entry, sl: lv.sl, tp: lv.tp, exit: sim.exit, res: sim.res,
+          bars: sim.j - i, r: resultR(ev.dir, entry, sim.exit, lv.risk, o.market)
+        });
+        i = sim.j + 1;
+        continue;
+      }
+      i++;
+    }
+    return trades;
+  }
+
+  function stats(trades) {
+    var s = { n: trades.length, wins: 0, losses: 0, sumR: 0, pos: 0, neg: 0, maxDD: 0, wr: 0, avgR: 0, pf: 0, avgBars: 0 };
+    var eq = 0, peak = 0, bars = 0;
+    trades.forEach(function (t) {
+      if (t.r > 0) { s.wins++; s.pos += t.r; } else { s.losses++; s.neg -= t.r; }
+      eq += t.r; s.sumR += t.r; bars += t.bars || 0;
+      if (eq > peak) peak = eq;
+      if (peak - eq > s.maxDD) s.maxDD = peak - eq;
+    });
+    if (s.n) { s.wr = s.wins / s.n * 100; s.avgR = s.sumR / s.n; s.avgBars = bars / s.n; }
+    s.pf = s.neg > 0 ? s.pos / s.neg : (s.pos > 0 ? Infinity : 0);
+    return s;
+  }
+
+  // Відбір найактивніших монет зі списку тикерів
+  function rankTickers(list, o, instMap) {
+    var out = [], skipped = { turnover: 0, spread: 0, other: 0 };
+    list.forEach(function (x) {
+      var sym = x.symbol;
+      if (!/USDT$/.test(sym)) { skipped.other++; return; }
+      var inst = instMap ? instMap[sym] : null;
+      if (instMap && (!inst || inst.status !== 'Trading' || inst.preListing)) { skipped.other++; return; }
+      var last = +x.lastPrice, hi = +x.highPrice24h, lo = +x.lowPrice24h, to = +x.turnover24h;
+      var bid = +x.bid1Price, ask = +x.ask1Price;
+      if (!(last > 0) || !(lo > 0)) { skipped.other++; return; }
+      if (!(to >= o.minTurnover * 1e6)) { skipped.turnover++; return; }
+      var spread = bid > 0 && ask > 0 ? (ask - bid) / ((ask + bid) / 2) * 100 : 99;
+      if (spread > o.maxSpread) { skipped.spread++; return; }
+      out.push({
+        symbol: sym, last: last, chg: +x.price24hPcnt * 100, range: (hi - lo) / lo * 100,
+        turnover: to, spread: spread, funding: x.fundingRate !== undefined && x.fundingRate !== '' ? +x.fundingRate * 100 : null
+      });
+    });
+    out.sort(function (a, b) { return b.range - a.range; });
+    return { list: out, skipped: skipped, total: list.length };
+  }
+
+  return {
+    TF_MS: TF_MS, HTF_OF: HTF_OF, FEE: FEE, SLIP: SLIP,
+    ema: ema, sma: sma, rsi: rsi, atr: atr, macdHist: macdHist, adx: adx,
+    parseKlines: parseKlines, indicators: indicators, htfTrend: htfTrend, mapHtf: mapHtf,
+    evaluate: evaluate, levels: levels, sizing: sizing, simulate: simulate, resultR: resultR,
+    backtest: backtest, stats: stats, rankTickers: rankTickers,
+    stepDec: stepDec, roundStep: roundStep, roundTick: roundTick
+  };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Core;
+
+</script>
+<script>
+// ===== APP: інтерфейс, дані Bybit, журнал =====
+(function () {
+  'use strict';
+  var C = Core;
+  var APP_VER = '1.0';
+
+  function $(s, r) { return (r || document).querySelector(s); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  var LS = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* немає місця або приватний режим */ } }
+  };
+
+  // ---------- Налаштування ----------
+  var DEF = {
+    balance: 1000, riskPct: 1, market: 'linear', maxLev: 3, maxOpen: 3,
+    tf: '5', topN: 20, minTurnover: 5, maxSpread: 0.15, mySymbols: '', refreshSec: 60,
+    sound: true, autoJournal: true,
+    minScore: 70, slAtr: 1.5, tpR: 2, maxBars: 24, minStopPct: 0.6, breakLookback: 20, volMult: 1.5, maxExt: 2,
+    btCandles: 2000
+  };
+  var FIELDS = [
+    { g: 'Гроші', k: 'balance', t: 'num', label: 'Баланс, USDT', min: 10, max: 10000000, step: 1, help: 'Скільки грошей на рахунку для торгівлі.' },
+    { g: 'Гроші', k: 'riskPct', t: 'num', label: 'Ризик на одну угоду, %', min: 0.1, max: 5, step: 0.1, help: 'Скільки максимум втрачаєш, якщо спрацює стоп. 1% від 1000 = 10 USDT. Більше 2% — дуже агресивно.' },
+    { g: 'Гроші', k: 'market', t: 'sel', label: 'Ринок', opts: [['linear', 'Ф\'ючерси USDT (LONG і SHORT)'], ['spot', 'Спот (тільки купівля)']], help: 'На ф\'ючерсах можна заробляти і на падінні (SHORT). На споті — тільки купівля.' },
+    { g: 'Гроші', k: 'maxLev', t: 'num', label: 'Максимальне плече', min: 1, max: 10, step: 1, help: 'Плече не міняє ризик (його задає стоп), але чим воно більше, тим ближче ліквідація. Бот бере найменше потрібне.' },
+    { g: 'Гроші', k: 'maxOpen', t: 'num', label: 'Максимум угод одночасно', min: 1, max: 10, step: 1, help: 'Маржа ділиться так, щоб вистачило на стільки угод.' },
+    { g: 'Сканер', k: 'tf', t: 'sel', label: 'Свічки', opts: [['1', '1 хв — дуже швидко, багато шуму'], ['3', '3 хв'], ['5', '5 хв — рекомендовано'], ['15', '15 хв — спокійніше']], help: 'Тренд перевіряється на старшому таймфреймі: 1→5 хв, 3→15 хв, 5→15 хв, 15→1 год.' },
+    { g: 'Сканер', k: 'topN', t: 'num', label: 'Скільки монет аналізувати', min: 5, max: 40, step: 1, help: 'Бот бере найволатильніші монети за 24 год. Більше монет — довше сканування.' },
+    { g: 'Сканер', k: 'minTurnover', t: 'num', label: 'Мінімальний обіг за 24 год, млн USDT', min: 0.1, max: 1000, step: 0.1, help: 'Відсікає монети, де мало торгів і ціну легко «смикнути».' },
+    { g: 'Сканер', k: 'maxSpread', t: 'num', label: 'Максимальний спред, %', min: 0.02, max: 1, step: 0.01, help: 'Різниця між ціною купівлі і продажу. Великий спред = мінус одразу після входу.' },
+    { g: 'Сканер', k: 'mySymbols', t: 'text', label: 'Мої монети (аналізувати завжди)', ph: 'MMT, BTC, ETH', help: 'Через кому, до 10 штук. «USDT» можна не писати.' },
+    { g: 'Сканер', k: 'refreshSec', t: 'sel', num: true, label: 'Автооновлення', opts: [[0, 'Вимкнено'], [30, 'Кожні 30 секунд'], [60, 'Кожну хвилину'], [120, 'Кожні 2 хвилини'], [300, 'Кожні 5 хвилин']], help: 'Плюс одразу після закриття кожної свічки.' },
+    { g: 'Сигнал', adv: true, k: 'minScore', t: 'num', label: 'Мінімальний бал сигналу', min: 40, max: 100, step: 5, help: 'Вище — менше сигналів, але якісніші.' },
+    { g: 'Сигнал', adv: true, k: 'slAtr', t: 'num', label: 'Стоп = ATR ×', min: 0.5, max: 5, step: 0.1, help: 'ATR — середній розмах свічки. Стоп ставиться на такій відстані.' },
+    { g: 'Сигнал', adv: true, k: 'tpR', t: 'num', label: 'Тейк = стоп ×', min: 0.5, max: 6, step: 0.1, help: '2 означає: потенційний прибуток удвічі більший за ризик.' },
+    { g: 'Сигнал', adv: true, k: 'maxBars', t: 'num', label: 'Максимальна тривалість угоди, свічок', min: 3, max: 200, step: 1, help: 'Якщо ні стоп, ні тейк не спрацювали — закрити вручну після стількох свічок.' },
+    { g: 'Сигнал', adv: true, k: 'minStopPct', t: 'num', label: 'Мінімальний стоп, %', min: 0, max: 5, step: 0.05, help: 'Якщо стоп вузький, комісія з\'їдає прибуток. Такі сигнали пропускаються.' },
+    { g: 'Сигнал', adv: true, k: 'breakLookback', t: 'num', label: 'Пробій максимуму/мінімуму за N свічок', min: 5, max: 100, step: 1 },
+    { g: 'Сигнал', adv: true, k: 'volMult', t: 'num', label: 'Обсяг вищий за середній у ×', min: 0.5, max: 5, step: 0.1 },
+    { g: 'Сигнал', adv: true, k: 'maxExt', t: 'num', label: 'Максимальне відхилення від EMA20, ATR', min: 0.5, max: 6, step: 0.1, help: 'Захист від входу «на хаях», коли ціна вже далеко втекла.' },
+    { g: 'Сигнал', adv: true, k: 'btCandles', t: 'sel', num: true, label: 'Глибина перевірки на історії', opts: [[1000, '1000 свічок'], [2000, '2000 свічок'], [3000, '3000 свічок']] },
+    { g: 'Інше', k: 'sound', t: 'bool', label: 'Звук при новому сигналі', help: 'Працює, коли сторінка відкрита на екрані і телефон не на беззвучному.' },
+    { g: 'Інше', k: 'autoJournal', t: 'bool', label: 'Записувати сигнали в журнал автоматично', help: 'Віртуальна перевірка без грошей: кожен свіжий сигнал записується і бот сам рахує результат.' }
+  ];
+
+  function clampOpt(src) {
+    var o = Object.assign({}, DEF);
+    FIELDS.forEach(function (f) {
+      var v = src ? src[f.k] : undefined;
+      if (v === undefined || v === null || v === '') return;
+      if (f.t === 'num') { v = Number(v); if (isFinite(v)) o[f.k] = Math.min(f.max, Math.max(f.min, v)); }
+      else if (f.t === 'sel') { if (f.opts.some(function (x) { return String(x[0]) === String(v); })) o[f.k] = f.num ? Number(v) : String(v); }
+      else if (f.t === 'bool') o[f.k] = !!v;
+      else o[f.k] = String(v).slice(0, 300);
+    });
+    return o;
+  }
+  var O = clampOpt(LS.get('bs_opt_v1', {}));
+
+  // ---------- Стан ----------
+  var S = {
+    busy: false, err: '', inst: null, instCat: '', instAt: 0, htf: {}, res: {}, order: [], rank: null, rankInfo: {}, tick: {},
+    lastScan: 0, nextAt: 0, bt: {}, btRun: false, btProg: '', btAt: 0, btErr: '',
+    journal: LS.get('bs_journal_v1', []), seen: LS.get('bs_seen_v1', {}), view: 'sig', open: {}, confirm: '', wake: null
+  };
+  if (!Array.isArray(S.journal)) S.journal = [];
+
+  // ---------- Bybit API ----------
+  var BASES = ['https://api.bybit.com', 'https://api.bytick.com'], baseIdx = 0;
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  async function api(path, params) {
+    var qs = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+    var lastErr = null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      var base = BASES[(baseIdx + attempt) % BASES.length];
+      var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var tm = ctl ? setTimeout(function () { ctl.abort(); }, 15000) : null;
+      try {
+        var r = await fetch(base + path + '?' + qs, { signal: ctl ? ctl.signal : undefined, cache: 'no-store' });
+        if (tm) clearTimeout(tm);
+        if (r.status === 403) throw new Error('доступ заборонено (403) — можливо, обмеження за регіоном');
+        if (r.status === 429) { await sleep(1500); throw new Error('забагато запитів (429)'); }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var j = await r.json();
+        if (j.retCode === 10006) { await sleep(1500); throw new Error('забагато запитів'); }
+        if (j.retCode !== 0) { var ae = new Error(j.retMsg || ('код ' + j.retCode)); ae.api = true; throw ae; }
+        baseIdx = (baseIdx + attempt) % BASES.length;
+        return j.result || {};
+      } catch (e) {
+        if (tm) clearTimeout(tm);
+        if (e && e.api) throw e;
+        lastErr = e && e.name === 'AbortError' ? new Error('немає відповіді 15 с') : e;
+      }
+    }
+    throw lastErr || new Error('мережа недоступна');
+  }
+
+  async function klines(cat, sym, tf, limit, start, end) {
+    var p = { category: cat, symbol: sym, interval: tf, limit: limit };
+    if (start) p.start = start;
+    if (end) p.end = end;
+    var r = await api('/v5/market/kline', p);
+    return C.parseKlines(r.list || []);
+  }
+
+  async function klinesDeep(cat, sym, tf, total) {
+    var tfMs = C.TF_MS[tf], raw = [], first = true, end = 0;
+    while (raw.length < total) {
+      var lim = Math.min(1000, total - raw.length), p = { category: cat, symbol: sym, interval: tf, limit: lim };
+      if (!first) { p.end = end; p.start = end - lim * tfMs + 1; }
+      var r = await api('/v5/market/kline', p);
+      var list = r.list || [];
+      if (!list.length) break;
+      raw = raw.concat(list);
+      var oldest = Infinity;
+      list.forEach(function (x) { var t = Number(x[0]); if (t < oldest) oldest = t; });
+      end = oldest - 1; first = false;
+      if (list.length < lim) break;
+    }
+    return C.parseKlines(raw);
+  }
+
+  async function ensureInstruments() {
+    var cat = O.market;
+    if (S.inst && S.instCat === cat && Date.now() - S.instAt < 6 * 3600000) return;
+    var map = {}, cursor = '', pages = 0;
+    do {
+      var p = { category: cat };
+      if (cat === 'linear') p.limit = 1000;
+      if (cursor) p.cursor = cursor;
+      var r = await api('/v5/market/instruments-info', p);
+      (r.list || []).forEach(function (x) {
+        if (x.quoteCoin !== 'USDT') return;
+        if (cat === 'linear' && x.contractType && x.contractType !== 'LinearPerpetual') return;
+        var lf = x.lotSizeFilter || {}, pf = x.priceFilter || {}, lev = x.leverageFilter || {};
+        map[x.symbol] = {
+          status: x.status, preListing: !!x.isPreListing, qtyStep: +(lf.qtyStep || lf.basePrecision || 0),
+          minQty: +(lf.minOrderQty || 0), tick: +(pf.tickSize || 0), launch: +(x.launchTime || 0), maxLev: +(lev.maxLeverage || 0)
+        };
+      });
+      cursor = r.nextPageCursor || ''; pages++;
+    } while (cat === 'linear' && cursor && pages < 5);
+    S.inst = map; S.instCat = cat; S.instAt = Date.now();
+  }
+
+  async function pool(items, n, fn) {
+    var idx = 0;
+    async function worker() { while (idx < items.length) { var my = idx++; await fn(items[my], my); } }
+    var ws = [];
+    for (var k = 0; k < Math.min(n, items.length); k++) ws.push(worker());
+    await Promise.all(ws);
+  }
+
+  function mySyms() {
+    return String(O.mySymbols || '').toUpperCase().split(/[\s,;]+/).map(function (s) {
+      s = s.replace(/[^A-Z0-9]/g, '');
+      if (s && !/USDT$/.test(s)) s += 'USDT';
+      return s;
+    }).filter(function (s, i, a) { return s.length > 4 && a.indexOf(s) === i; }).slice(0, 10);
+  }
+
+  // ---------- Аналіз ----------
+  async function analyze(sym, cat) {
+    if (S.inst && S.instCat === cat && !S.inst[sym]) {
+      return { sym: sym, err: 'Такої монети немає на ' + (cat === 'spot' ? 'споті' : 'ф\'ючерсах USDT') + ' Bybit.' };
+    }
+    var tf = O.tf, htf = C.HTF_OF[tf], tfMs = C.TF_MS[tf], htfMs = C.TF_MS[htf];
+    var cd = await klines(cat, sym, tf, 300);
+    var key = cat + '|' + sym + '|' + htf, hc = S.htf[key];
+    if (!hc || Date.now() - hc.at > Math.min(180000, htfMs / 3)) {
+      hc = { cd: await klines(cat, sym, htf, 200), at: Date.now() };
+      S.htf[key] = hc;
+    }
+    var n = cd.c.length;
+    if (n < 65 || hc.cd.c.length < 55) return { sym: sym, err: 'Замало історії свічок (нова монета) — аналіз неможливий.' };
+    if (cd.t[n - 1] + 2 * tfMs < Date.now()) return { sym: sym, err: 'Дані застарілі — торгів по монеті зараз немає.' };
+    var ind = C.indicators(cd), hind = C.indicators(hc.cd), tr = C.htfTrend(hc.cd, hind), map = C.mapHtf(cd, tfMs, hc.cd, htfMs);
+    var i = n - 2, ht = map[i] >= 0 ? tr[map[i]] : 0;
+    var ev = C.evaluate(cd, ind, i, ht, O);
+    var price = cd.c[n - 1];
+    var r = { sym: sym, ev: ev, price: price, t: cd.t[i], formT: cd.t[n - 1], tfMs: tfMs, tf: tf, ht: ht, atrPct: ind.atr[i] / cd.c[i] * 100, cat: cat };
+    if (ev.signal) {
+      var lv0 = C.levels(ev.dir, cd.c[i], ev.atr, O), hi = cd.h[n - 1], lo = cd.l[n - 1];
+      r.touched = ev.dir === 1 ? (lo <= lv0.sl ? 'стоп' : hi >= lv0.tp ? 'тейк' : '') : (hi >= lv0.sl ? 'стоп' : lo <= lv0.tp ? 'тейк' : '');
+      r.drift = (price - cd.c[i]) * ev.dir / ev.atr;
+      r.late = !!r.touched || Math.abs(r.drift) > 0.5;
+    }
+    return r;
+  }
+
+  function instOf(sym) { return S.inst && S.instCat === O.market ? S.inst[sym] : null; }
+
+  function curLevels(r) {
+    var lv = C.levels(r.ev.dir, r.price, r.ev.atr, O), inst = instOf(r.sym);
+    if (inst && inst.tick > 0) { lv.entry = C.roundTick(lv.entry, inst.tick); lv.sl = C.roundTick(lv.sl, inst.tick); lv.tp = C.roundTick(lv.tp, inst.tick); }
+    return lv;
+  }
+  function curSizing(r, lv) {
+    var inst = instOf(r.sym), o = O;
+    if (inst && inst.maxLev >= 1 && inst.maxLev < O.maxLev) o = Object.assign({}, O, { maxLev: Math.floor(inst.maxLev) });
+    return C.sizing(r.ev.dir, lv, o, inst);
+  }
+
+  async function scan() {
+    if (S.busy) return;
+    S.busy = true; S.err = ''; setProg(0.03); setStatus('Сканую ринок…');
+    var cat = O.market;
+    try {
+      try { await ensureInstruments(); } catch (e) { /* без довідника теж працює, але без округлення */ }
+      var tk = await api('/v5/market/tickers', { category: cat });
+      var list = tk.list || [];
+      S.tick = {};
+      list.forEach(function (x) { S.tick[x.symbol] = x; });
+      var rk = C.rankTickers(list, O, S.inst && S.instCat === cat ? S.inst : null);
+      S.rank = rk; S.rankInfo = {};
+      rk.list.forEach(function (x, k) { x.pos = k + 1; S.rankInfo[x.symbol] = x; });
+      var pick = rk.list.slice(0, O.topN).map(function (x) { return x.symbol; });
+      mySyms().forEach(function (s) { if (pick.indexOf(s) < 0) pick.push(s); });
+      S.order = pick;
+      setStatus('Аналізую ' + pick.length + ' монет…');
+      var done = 0;
+      await pool(pick, 4, async function (sym) {
+        try { S.res[sym] = await analyze(sym, cat); }
+        catch (e) { S.res[sym] = { sym: sym, err: 'Не вдалося отримати дані: ' + e.message }; }
+        done++; setProg(0.1 + 0.85 * done / pick.length); scheduleRender();
+      });
+      Object.keys(S.res).forEach(function (k) { if (pick.indexOf(k) < 0) delete S.res[k]; });
+      S.lastScan = Date.now();
+      handleNewSignals();
+      await updateJournal();
+    } catch (e) {
+      S.err = 'Немає зв\'язку з Bybit: ' + e.message + '. Перевір інтернет або VPN і натисни «Оновити».';
+    } finally {
+      S.busy = false; setProg(0); planNext(); renderAll();
+    }
+  }
+
+  function handleNewSignals() {
+    var now = Date.now(), fresh = [];
+    Object.keys(S.seen).forEach(function (k) { if (now - S.seen[k] > 2 * 86400000) delete S.seen[k]; });
+    S.order.forEach(function (sym) {
+      var r = S.res[sym];
+      if (!r || !r.ev || !r.ev.signal) return;
+      var key = O.market + '|' + O.tf + '|' + sym + '|' + r.t + '|' + r.ev.dir;
+      if (S.seen[key]) return;
+      S.seen[key] = now;
+      fresh.push(r);
+    });
+    LS.set('bs_seen_v1', S.seen);
+    if (!fresh.length) return;
+    var added = 0;
+    fresh.forEach(function (r) {
+      if (!O.autoJournal || r.late) return;
+      var lv = curLevels(r), sz = curSizing(r, lv);
+      if (sz.tooSmall || openCount() >= O.maxOpen || openSym(r.sym)) return;
+      if (journalAdd(r, true)) added++;
+    });
+    beep();
+    toast('Новий сигнал: ' + fresh.map(function (r) { return base(r.sym) + ' ' + (r.ev.dir === 1 ? 'LONG' : 'SHORT'); }).join(', ') + (added ? ' · у журнал: ' + added : ''));
+  }
+
+  // ---------- Журнал ----------
+  function saveJournal() { LS.set('bs_journal_v1', S.journal); }
+  function openCount() { return S.journal.filter(function (e) { return e.status === 'open'; }).length; }
+  function openSym(sym) { return S.journal.some(function (e) { return e.status === 'open' && e.sym === sym; }); }
+
+  function journalAdd(r, auto) {
+    if (S.journal.some(function (e) { return e.sym === r.sym && e.sigT === r.t && e.tf === r.tf; })) return false;
+    var lv = curLevels(r), sz = curSizing(r, lv);
+    S.journal.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      sym: r.sym, cat: r.cat, tf: r.tf, dir: r.ev.dir, sigT: r.t, t0: r.formT, created: Date.now(),
+      entry: lv.entry, sl: lv.sl, tp: lv.tp, qty: sz.tooSmall ? 0 : sz.qty, riskUsd: sz.riskUsd, mb: O.maxBars,
+      status: 'open', auto: !!auto, score: r.ev.score
+    });
+    if (S.journal.length > 400) S.journal.length = 400;
+    saveJournal();
+    return true;
+  }
+
+  function entryPnl(e, exit) {
+    var fee = C.FEE[e.cat] || C.FEE.linear;
+    if (e.qty > 0) return e.qty * e.dir * (exit - e.entry) - e.qty * (e.entry + exit) * (fee + C.SLIP);
+    return C.resultR(e.dir, e.entry, exit, Math.abs(e.entry - e.sl), e.cat) * e.riskUsd;
+  }
+
+  async function updateJournal() {
+    var open = S.journal.filter(function (e) { return e.status === 'open'; });
+    if (!open.length) return;
+    await pool(open, 3, async function (e) {
+      try {
+        var tfMs = C.TF_MS[e.tf];
+        var cd = await klines(e.cat, e.sym, e.tf, Math.min(1000, e.mb + 3), e.t0, e.t0 + tfMs * (e.mb + 2));
+        if (!cd.t.length) return;
+        var now = Date.now(), lastClosed = -1, i0 = 0;
+        for (var j = 0; j < cd.t.length; j++) if (cd.t[j] + tfMs <= now) lastClosed = j;
+        while (i0 < cd.t.length && cd.t[i0] < e.t0) i0++;
+        if (i0 >= cd.t.length) return;
+        var sim = C.simulate(cd, e.dir, i0, e.entry, e.sl, e.tp, e.mb, cd.t.length - 1, lastClosed);
+        e.err = '';
+        if (sim.res !== 'open') {
+          e.status = sim.res; e.exit = sim.exit; e.exitT = cd.t[sim.j];
+          e.r = C.resultR(e.dir, e.entry, sim.exit, Math.abs(e.entry - e.sl), e.cat);
+          e.pnl = entryPnl(e, sim.exit);
+        } else {
+          e.last = cd.c[cd.c.length - 1]; e.upnl = entryPnl(e, e.last); e.bars = cd.t.length - i0;
+        }
+      } catch (err) { e.err = err.message; }
+    });
+    saveJournal();
+  }
+
+  function journalCsv() {
+    var rows = [['дата', 'монета', 'сторона', 'вхід', 'стоп', 'тейк', 'кількість', 'ризик USDT', 'статус', 'вихід', 'R', 'PnL USDT']];
+    S.journal.slice().reverse().forEach(function (e) {
+      rows.push([dt(e.created), e.sym, e.dir === 1 ? 'LONG' : 'SHORT', e.entry, e.sl, e.tp, e.qty, e.riskUsd.toFixed(2), statusName(e.status),
+        e.exit == null ? '' : e.exit, e.r == null ? '' : e.r.toFixed(2), e.pnl == null ? '' : e.pnl.toFixed(2)]);
+    });
+    return rows.map(function (r) { return r.join(';'); }).join('\n');
+  }
+
+  // ---------- Перевірка на історії ----------
+  async function runBacktest() {
+    if (S.btRun) return;
+    S.btRun = true; S.btErr = ''; S.bt = {}; S.btProg = 'Готую список монет…'; renderBt();
+    var cat = O.market, tf = O.tf, htf = C.HTF_OF[tf], tfMs = C.TF_MS[tf], htfMs = C.TF_MS[htf];
+    try {
+      while (S.busy) await sleep(300);
+      if (!S.order.length) { await scan(); }
+      var syms = S.order.filter(function (s) { var r = S.res[s]; return !(r && r.err && !r.ev && /немає на/.test(r.err)); });
+      if (!syms.length) throw new Error('немає монет для перевірки — спочатку онови сигнали');
+      var done = 0;
+      await pool(syms, 3, async function (sym) {
+        try {
+          var cd = await klinesDeep(cat, sym, tf, O.btCandles);
+          var need = Math.min(3000, Math.ceil(O.btCandles * tfMs / htfMs) + 80);
+          var hc = await klinesDeep(cat, sym, htf, need);
+          if (cd.c.length < 120 || hc.c.length < 60) { S.bt[sym] = { err: 'замало історії' }; }
+          else {
+            var tr = C.backtest(cd, hc, tf, O);
+            S.bt[sym] = { trades: tr, st: C.stats(tr), days: (cd.t[cd.t.length - 1] - cd.t[0]) / 86400000, n: cd.c.length };
+          }
+        } catch (e) { S.bt[sym] = { err: e.message }; }
+        done++; S.btProg = 'Перевірено ' + done + ' з ' + syms.length + '…'; renderBt();
+      });
+      S.btAt = Date.now(); S.btOpt = { tf: tf, market: cat, risk: O.balance * O.riskPct / 100 };
+    } catch (e) { S.btErr = e.message; }
+    S.btRun = false; S.btProg = ''; renderBt(); renderSig();
+  }
+
+  // ---------- Формат ----------
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function hm(t) { var d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function dt(t) { var d = new Date(t); return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + ' ' + hm(t); }
+  function base(sym) { return sym.replace(/USDT$/, ''); }
+  function autoDec(p) { var a = Math.abs(p); return a >= 1000 ? 1 : a >= 100 ? 2 : a >= 10 ? 3 : a >= 1 ? 4 : a >= 0.1 ? 5 : a >= 0.01 ? 6 : 8; }
+  function fmtP(p, sym) { if (p == null || !isFinite(p)) return '—'; var inst = instOf(sym); return p.toFixed(inst && inst.tick > 0 ? C.stepDec(inst.tick) : autoDec(p)); }
+  function fmtQ(q, sym) { var inst = instOf(sym); return inst && inst.qtyStep > 0 ? q.toFixed(C.stepDec(inst.qtyStep)) : (q >= 100 ? q.toFixed(0) : q >= 1 ? q.toFixed(2) : q.toPrecision(3)); }
+  function usd(x) { return Math.abs(x) >= 1000 ? x.toFixed(0) : x.toFixed(2); }
+  function sgn(x, d) { return (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(d == null ? 2 : d); }
+  function fmtTurn(x) { return x >= 1e9 ? (x / 1e9).toFixed(1) + ' млрд' : (x / 1e6).toFixed(1) + ' млн'; }
+  function tfName(tf) { return tf === '60' ? '1 год' : tf === '240' ? '4 год' : tf + ' хв'; }
+  function holdText() { var m = O.maxBars * Number(O.tf); return m >= 120 ? (m / 60).toFixed(m % 60 ? 1 : 0) + ' год' : m + ' хв'; }
+  function statusName(s) { return { open: 'відкрита', win: 'тейк', loss: 'стоп', time: 'час вийшов' }[s] || s; }
+  function cls(x) { return x > 0 ? 'win' : x < 0 ? 'loss' : ''; }
+
+  // ---------- Рендер: Сигнали ----------
+  var rq = 0;
+  function scheduleRender() { if (rq) return; rq = setTimeout(function () { rq = 0; renderSig(); }, 250); }
+
+  function checksHtml(ev) {
+    if (!ev || !ev.checks || !ev.checks.length) return '<p class="mut">Недостатньо даних для перевірок.</p>';
+    return '<ul class="ck">' + ev.checks.map(function (c) {
+      return '<li class="' + (c.ok ? 'ok' : 'no') + '"><b>' + (c.ok ? '✓' : '✗') + '</b><span>' + esc(c.text) +
+        (c.req ? ' <em>обов\'язково</em>' : '') + '</span>' + (c.pts ? '<small>' + (c.ok ? '+' : '') + (c.ok ? c.pts : 0) + '/' + c.pts + '</small>' : '') + '</li>';
+    }).join('') + '</ul>' + (ev.spotBlocked ? '<p class="mut">Спот: продаж «у шорт» неможливий, тому тільки LONG.</p>' : '');
+  }
+
+  function btLine(sym) {
+    var b = S.bt[sym];
+    if (!b || !b.st) return '';
+    var st = b.st, risk = O.balance * O.riskPct / 100;
+    return '<p class="btl">На історії (' + b.days.toFixed(0) + ' дн.): ' + st.n + ' угод, виграшних ' + st.wr.toFixed(0) + '%, результат <b class="' + cls(st.sumR) + '">' +
+      sgn(st.sumR, 1) + 'R ≈ ' + sgn(st.sumR * risk, 0) + ' USDT</b></p>';
+  }
+
+  function vrow(label, val, copy, klass) {
+    var v = copy != null ? '<button class="cp" data-copy="' + esc(copy) + '">' + val + '</button>' : '<span>' + val + '</span>';
+    return '<div class="lr' + (klass ? ' ' + klass : '') + '"><dt>' + label + '</dt><dd>' + v + '</dd></div>';
+  }
+
+  function marketLine(r) {
+    var ri = S.rankInfo[r.sym], tk = S.tick[r.sym], chg = ri ? ri.chg : tk ? +tk.price24hPcnt * 100 : null;
+    var parts = [];
+    if (chg != null && isFinite(chg)) parts.push('<span class="' + cls(chg) + '">' + sgn(chg, 1) + '% за 24 год</span>');
+    if (ri) parts.push('розмах ' + ri.range.toFixed(0) + '%', 'обіг ' + fmtTurn(ri.turnover));
+    return parts.join(' · ');
+  }
+
+  function cardSignal(r) {
+    var ev = r.ev, L = ev.dir === 1, lv = curLevels(r), sz = curSizing(r, lv), inst = instOf(r.sym), ri = S.rankInfo[r.sym];
+    var b = base(r.sym), fee = C.FEE[O.market] || C.FEE.linear, warn = [];
+    var slPct = Math.abs(lv.sl - lv.entry) / lv.entry * 100, tpPct = Math.abs(lv.tp - lv.entry) / lv.entry * 100;
+    if (r.touched) warn.push('Після сигналу ціна вже торкалась рівня «' + r.touched + '». Краще пропустити.');
+    else if (r.drift > 0.5) warn.push('Ціна вже пройшла ' + (r.drift).toFixed(1) + ' ATR у бік сигналу. Не наздоганяй — пропусти або чекай наступного.');
+    else if (r.drift < -0.5) warn.push('Ціна пішла проти сигналу на ' + (-r.drift).toFixed(1) + ' ATR. Сигнал слабшає.');
+    if (sz.tooSmall) warn.push('Кількість менша за мінімум біржі (' + sz.minQty + ' ' + b + '). Таку угоду не відкрити.');
+    if (sz.capped) warn.push('Розмір обмежено, щоб вистачило маржі на ' + O.maxOpen + ' угод(и). Реальний ризик ' + usd(sz.riskUsd) + ' USDT.');
+    var oc = openCount();
+    if (oc >= O.maxOpen) warn.push('У журналі вже ' + oc + ' відкритих угод (максимум ' + O.maxOpen + ').');
+    if (ri && ri.funding != null && Math.abs(ri.funding) >= 0.05 && (ri.funding > 0) === L) warn.push('Високий фандинг ' + ri.funding.toFixed(3) + '% — його платиш ти, поки тримаєш позицію.');
+    if (inst && inst.launch && Date.now() - inst.launch < 3 * 86400000) warn.push('Нова монета (лістинг ' + Math.max(0, Math.floor((Date.now() - inst.launch) / 86400000)) + ' дн. тому) — ціна може різко стрибати.');
+    if (slPct > 6) warn.push('Дуже широкий стоп (' + slPct.toFixed(1) + '%) — монета скаче надто сильно.');
+    var inJ = S.journal.some(function (e) { return e.sym === r.sym && e.sigT === r.t && e.tf === r.tf; });
+    var h = '<article class="card ' + (L ? 'long' : 'short') + (r.late ? ' late' : '') + '">';
+    h += '<div class="ch"><div><b class="sym">' + esc(b) + '</b><span class="tag">' + (O.market === 'spot' ? 'спот' : 'ф\'ючерс') + '</span></div><div class="px">' + fmtP(r.price, r.sym) + '</div></div>';
+    h += '<div class="ml">' + marketLine(r) + '</div>';
+    h += '<div class="vd"><b>' + (L ? 'LONG' : 'SHORT') + '</b><span>' + (L ? 'купити — ставка на ріст' : 'продати — ставка на падіння') + '</span><i>' + ev.score + '/100</i></div>';
+    h += '<div class="meter"><i style="width:' + ev.score + '%"></i></div>';
+    h += '<dl class="lv">';
+    h += vrow('Вхід (ринком, зараз)', fmtP(lv.entry, r.sym), fmtP(lv.entry, r.sym));
+    h += vrow('Стоп-лосс', fmtP(lv.sl, r.sym) + ' <small>' + (L ? '−' : '+') + slPct.toFixed(2) + '%</small>', fmtP(lv.sl, r.sym), 'loss');
+    h += vrow('Тейк-профіт', fmtP(lv.tp, r.sym) + ' <small>' + (L ? '+' : '−') + tpPct.toFixed(2) + '%</small>', fmtP(lv.tp, r.sym), 'win');
+    h += vrow('Кількість', fmtQ(sz.qty, r.sym) + ' ' + esc(b), fmtQ(sz.qty, r.sym));
+    h += vrow('Обсяг позиції', usd(sz.notional) + ' USDT');
+    if (O.market !== 'spot') { h += vrow('Плече (ізольована)', sz.lev + 'x'); h += vrow('Маржа', usd(sz.margin) + ' USDT'); }
+    h += vrow('Якщо спрацює стоп', '−' + usd(sz.riskUsd) + ' USDT', null, 'loss');
+    h += vrow('Якщо спрацює тейк', '+' + usd(sz.profit) + ' USDT', null, 'win');
+    if (sz.liq) h += vrow('Ліквідація ≈', fmtP(sz.liq, r.sym));
+    h += vrow('Комісія ≈', usd(sz.notional * fee * 2) + ' USDT');
+    h += '</dl>';
+    if (warn.length) h += '<ul class="warn">' + warn.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>';
+    h += '<p class="meta">Сигнал по свічці ' + hm(r.t) + '–' + hm(r.t + r.tfMs) + ', оновиться о ' + hm(r.formT + r.tfMs) + '. Якщо за ' + holdText() + ' не спрацював ні стоп, ні тейк — закрий вручну.</p>';
+    h += btLine(r.sym);
+    h += '<div class="acts">' + (inJ ? '<span class="done">✓ Записано в журнал</span>' : '<button class="btn" data-act="jadd" data-sym="' + esc(r.sym) + '">Записати в журнал</button>') + '</div>';
+    h += '<details data-sym="' + esc(r.sym) + '"' + (S.open[r.sym] ? ' open' : '') + '><summary>Чому такий сигнал</summary>' + checksHtml(ev) + '</details>';
+    return h + '</article>';
+  }
+
+  function rowWait(r) {
+    var b = base(r.sym);
+    if (r.err) return '<details class="w" data-sym="' + esc(r.sym) + '"' + (S.open[r.sym] ? ' open' : '') + '><summary><b>' + esc(b) + '</b><span class="hint mut">помилка</span></summary><p class="err">' + esc(r.err) + '</p></details>';
+    var ev = r.ev, dirTxt = ev.ready ? (ev.dir === 1 ? '↑ LONG' : '↓ SHORT') : '—';
+    var htTxt = r.ht === 1 ? 'вгору' : r.ht === -1 ? 'вниз' : 'боковик';
+    var h = '<details class="w" data-sym="' + esc(r.sym) + '"' + (S.open[r.sym] ? ' open' : '') + '><summary>';
+    h += '<b>' + esc(b) + '</b><span class="px">' + fmtP(r.price, r.sym) + '</span>';
+    h += '<span class="mini"><i class="' + (ev.dir === 1 ? 'l' : 's') + '" style="width:' + (ev.score || 0) + '%"></i></span>';
+    h += '<span class="hint">' + dirTxt + ' ' + (ev.score || 0) + '</span>';
+    var miss = (ev.checks || []).filter(function (c) { return !c.ok && c.sh; }).sort(function (a, b) { return b.req - a.req; }).map(function (c) { return c.sh; });
+    if (miss.length) h += '<span class="why">Не вистачає: ' + esc(miss.slice(0, 3).join(', ')) + (miss.length > 3 ? '…' : '') + '</span>';
+    h += '</summary>';
+    h += '<div class="wd"><p class="ml">' + marketLine(r) + '</p><p class="mut">Тренд ' + tfName(C.HTF_OF[r.tf]) + ': ' + htTxt + ' · ATR ' + r.atrPct.toFixed(2) + '% на свічку · до сигналу треба ' + O.minScore + ' балів і всі обов\'язкові пункти</p>' + checksHtml(ev) + btLine(r.sym) + '</div></details>';
+    return h;
+  }
+
+  function renderSig() {
+    var el = $('#v-sig');
+    var res = S.order.map(function (s) { return S.res[s]; }).filter(Boolean);
+    var sigs = res.filter(function (r) { return r.ev && r.ev.signal; }).sort(function (a, b) { return (a.late - b.late) || (b.ev.score - a.ev.score); });
+    var waits = res.filter(function (r) { return !(r.ev && r.ev.signal); }).sort(function (a, b) { return (b.ev ? b.ev.score : -1) - (a.ev ? a.ev.score : -1); });
+    var risk = O.balance * O.riskPct / 100, h = '';
+    h += '<div class="sum"><div><span>Баланс</span><b>' + usd(O.balance) + '</b></div><div><span>Ризик/угода</span><b>' + usd(risk) + '</b></div><div><span>Відкрито</span><b>' + openCount() + '/' + O.maxOpen + '</b></div></div>';
+    if (S.rank) {
+      h += '<p class="scan">Перевірено ' + S.rank.total + ' монет → пройшли фільтр ' + S.rank.list.length + ' → аналіз ' + S.order.length +
+        ' · свічки ' + tfName(O.tf) + ', тренд ' + tfName(C.HTF_OF[O.tf]) + '</p>';
+    }
+    if (S.err) h += '<div class="alert">' + esc(S.err) + '</div>';
+    if (!res.length) {
+      h += '<div class="empty">' + (S.busy ? '<b>Сканую ринок…</b><p>Перший раз це займає 10–30 секунд.</p>' : '<b>Ще немає даних</b><p>Натисни «Оновити» вгорі.</p>') + '</div>';
+    } else {
+      if (sigs.length) h += '<h2>Сигнали зараз · ' + sigs.length + '</h2>' + sigs.map(cardSignal).join('');
+      else h += '<div class="quiet"><b>Зараз сигналів немає</b><p>Це нормально: бот чекає моменту, коли збігаються тренд, пробій і обсяг. Нижче видно, хто найближче до сигналу.</p></div>';
+      h += '<h2>Під наглядом · ' + waits.length + '</h2><div class="wl">' + waits.map(rowWait).join('') + '</div>';
+    }
+    el.innerHTML = h;
+    badges();
+  }
+
+  // ---------- Рендер: Перевірка ----------
+  function equitySvg(vals) {
+    if (vals.length < 2) return '';
+    var W = 320, H = 110, min = Math.min.apply(null, vals.concat([0])), max = Math.max.apply(null, vals.concat([0])), span = (max - min) || 1;
+    function y(v) { return (H - 8 - (v - min) / span * (H - 16)).toFixed(1); }
+    var pts = vals.map(function (v, k) { return (k / (vals.length - 1) * W).toFixed(1) + ',' + y(v); }).join(' ');
+    var last = vals[vals.length - 1];
+    return '<svg class="eq" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-label="Крива результату">' +
+      '<line x1="0" x2="' + W + '" y1="' + y(0) + '" y2="' + y(0) + '" class="zero"/>' +
+      '<polyline points="' + pts + '" class="' + (last >= 0 ? 'up' : 'dn') + '" vector-effect="non-scaling-stroke"/></svg>';
+  }
+
+  function renderBt() {
+    var el = $('#v-bt'), syms = Object.keys(S.bt), h = '';
+    h += '<h1>Перевірка на історії</h1><p class="lead">Бот проганяє ті самі правила по минулих свічках монет, які зараз у скані, і рахує, що було б: вхід на наступній свічці, стоп/тейк, комісія ' +
+      (O.market === 'spot' ? '0.1%' : '0.055%') + ' і проковзування. Якщо в одній свічці зачеплено і стоп, і тейк — рахується як збиток.</p>';
+    h += '<div class="row"><button class="btn" data-act="bt"' + (S.btRun ? ' disabled' : '') + '>' + (S.btRun ? 'Перевіряю…' : 'Запустити перевірку') + '</button><span class="mut">' +
+      O.btCandles + ' свічок ' + tfName(O.tf) + ' ≈ ' + (O.btCandles * Number(O.tf) / 1440).toFixed(1) + ' дн. на монету</span></div>';
+    if (S.btProg) h += '<p class="mut">' + esc(S.btProg) + '</p>';
+    if (S.btErr) h += '<div class="alert">' + esc(S.btErr) + '</div>';
+    var all = [];
+    syms.forEach(function (s) { if (S.bt[s].trades) all = all.concat(S.bt[s].trades.map(function (t) { return Object.assign({ sym: s }, t); })); });
+    if (syms.length && !S.btRun) {
+      all.sort(function (a, b) { return a.t - b.t; });
+      var st = C.stats(all), risk = O.balance * O.riskPct / 100, eq = [0], acc = 0;
+      all.forEach(function (t) { acc += t.r; eq.push(acc); });
+      var verdict;
+      if (st.n < 30) verdict = 'Угод замало (' + st.n + ') — результат майже випадковий. Збільш глибину перевірки в налаштуваннях.';
+      else if (st.sumR > 0 && st.pf >= 1.2) verdict = 'На цьому відрізку правила заробляли. Але минуле не гарантує майбутнього — 1–2 тижні подивись журнал, перш ніж ризикувати грошима.';
+      else if (st.sumR > 0) verdict = 'Ледь у плюсі: після комісій перевага слабка. На реальні гроші — обережно або не варто.';
+      else verdict = 'У мінусі. З такими налаштуваннями на реальні гроші торгувати не варто. Спробуй інші свічки або вищий мінімальний бал.';
+      h += '<div class="tiles"><div><span>Угод</span><b>' + st.n + '</b></div><div><span>Виграшних</span><b>' + st.wr.toFixed(0) + '%</b></div>' +
+        '<div><span>Результат</span><b class="' + cls(st.sumR) + '">' + sgn(st.sumR, 1) + 'R</b></div><div><span>≈ USDT</span><b class="' + cls(st.sumR) + '">' + sgn(st.sumR * risk, 0) + '</b></div></div>';
+      h += '<p class="mut small">R — одиниця ризику. 1R = ' + usd(risk) + ' USDT при твоїх налаштуваннях. Найбільша просадка: −' + st.maxDD.toFixed(1) + 'R (≈ −' + usd(st.maxDD * risk) + ' USDT). Середня угода триває ' +
+        Math.round(st.avgBars * Number(O.tf)) + ' хв.</p>';
+      h += equitySvg(eq) + '<p class="verdict">' + esc(verdict) + '</p>';
+      var rows = syms.map(function (s) { return { s: s, b: S.bt[s] }; }).sort(function (a, b) { return (b.b.st ? b.b.st.sumR : -999) - (a.b.st ? a.b.st.sumR : -999); });
+      h += '<h2>По монетах</h2><table class="tbl"><thead><tr><th>Монета</th><th>Угод</th><th>Вигр.</th><th>R</th><th>USDT</th></tr></thead><tbody>';
+      rows.forEach(function (x) {
+        if (x.b.err) { h += '<tr><td>' + esc(base(x.s)) + '</td><td colspan="4" class="mut">' + esc(x.b.err) + '</td></tr>'; return; }
+        var s2 = x.b.st;
+        h += '<tr><td>' + esc(base(x.s)) + '</td><td>' + s2.n + '</td><td>' + (s2.n ? s2.wr.toFixed(0) + '%' : '—') + '</td><td class="' + cls(s2.sumR) + '">' + sgn(s2.sumR, 1) + '</td><td class="' + cls(s2.sumR) + '">' + sgn(s2.sumR * risk, 0) + '</td></tr>';
+      });
+      h += '</tbody></table>';
+      var lastT = all.slice(-15).reverse();
+      if (lastT.length) {
+        h += '<h2>Останні угоди на історії</h2><ul class="tl">' + lastT.map(function (t) {
+          return '<li><span>' + dt(t.t) + '</span><b>' + esc(base(t.sym)) + '</b><span class="' + (t.dir === 1 ? 'win' : 'loss') + '">' + (t.dir === 1 ? 'LONG' : 'SHORT') + '</span><span>' + (t.res === 'time' ? 'час' : statusName(t.res)) + '</span><b class="' + cls(t.r) + '">' + sgn(t.r, 2) + 'R</b></li>';
+        }).join('') + '</ul>';
+      }
+    } else if (!S.btRun) {
+      h += '<div class="empty"><b>Ще не перевіряли</b><p>Натисни «Запустити перевірку». Займе ~20–60 секунд.</p></div>';
+    }
+    el.innerHTML = h;
+  }
+
+  // ---------- Рендер: Журнал ----------
+  function renderJr() {
+    var el = $('#v-jr'), J = S.journal, closed = J.filter(function (e) { return e.status !== 'open'; }), open = J.filter(function (e) { return e.status === 'open'; });
+    var pnl = closed.reduce(function (a, e) { return a + (e.pnl || 0); }, 0), wins = closed.filter(function (e) { return e.pnl > 0; }).length;
+    var sumR = closed.reduce(function (a, e) { return a + (e.r || 0); }, 0);
+    var h = '<h1>Журнал без грошей</h1><p class="lead">Сюди записуються сигнали, а бот сам перевіряє по реальних свічках Bybit, чим вони закінчились. Так видно, чи стратегія заробляє саме зараз.</p>';
+    h += '<div class="tiles"><div><span>Віртуальний баланс</span><b class="' + cls(pnl) + '">' + usd(O.balance + pnl) + '</b></div><div><span>Закрито</span><b>' + closed.length + '</b></div>' +
+      '<div><span>Виграшних</span><b>' + (closed.length ? (wins / closed.length * 100).toFixed(0) + '%' : '—') + '</b></div><div><span>Результат</span><b class="' + cls(pnl) + '">' + sgn(pnl, 2) + '</b></div></div>';
+    if (closed.length) h += '<p class="mut small">Сума: ' + sgn(sumR, 2) + 'R. Відкритих зараз: ' + open.length + '.</p>';
+    var eq = [0], acc = 0;
+    closed.slice().reverse().forEach(function (e) { acc += e.pnl || 0; eq.push(acc); });
+    if (eq.length > 2) h += equitySvg(eq);
+    h += '<div class="row"><button class="btn" data-act="jupd">Оновити журнал</button><button class="btn ghost" data-act="jcsv">Копіювати CSV</button>' +
+      '<button class="btn ghost danger" data-act="jclear">' + (S.confirm === 'jclear' ? 'Точно? Натисни ще раз' : 'Очистити') + '</button></div>';
+    if (!J.length) h += '<div class="empty"><b>Журнал порожній</b><p>Коли з\'явиться сигнал, він запишеться сюди автоматично (це можна вимкнути в налаштуваннях).</p></div>';
+    h += J.map(function (e) {
+      var L = e.dir === 1, st = e.status, res = st === 'open' ? (e.upnl != null ? '<span class="' + cls(e.upnl) + '">зараз ' + sgn(e.upnl, 2) + '</span>' : '<span class="mut">чекаю дані</span>') :
+        '<b class="' + cls(e.pnl) + '">' + sgn(e.pnl, 2) + ' USDT</b>';
+      return '<div class="je ' + st + '"><div class="jh"><b>' + esc(base(e.sym)) + '</b><span class="' + (L ? 'win' : 'loss') + '">' + (L ? 'LONG' : 'SHORT') + '</span><span class="mut">' + dt(e.created) + (e.auto ? ' · авто' : '') +
+        '</span><span class="st">' + statusName(st) + '</span></div><div class="jb"><span>вхід ' + e.entry + '</span><span>стоп ' + e.sl + '</span><span>тейк ' + e.tp + '</span>' +
+        (e.exit != null ? '<span>вихід ' + fmtP(e.exit, e.sym) + '</span>' : '') + '</div><div class="jf">' + res + (e.r != null ? ' <span class="mut">(' + sgn(e.r, 2) + 'R)</span>' : '') +
+        (e.err ? ' <span class="err">' + esc(e.err) + '</span>' : '') + '<button class="x" data-act="jdel" data-id="' + esc(e.id) + '" aria-label="Видалити">Видалити</button></div></div>';
+    }).join('');
+    el.innerHTML = h;
+  }
+
+  // ---------- Рендер: Налаштування ----------
+  function renderSet() {
+    var el = $('#v-set'), groups = [], h = '<h1>Налаштування</h1><p class="lead">Стандартні значення підібрані для старту. Зміни зберігаються одразу.</p>';
+    FIELDS.forEach(function (f) { if (groups.indexOf(f.g) < 0) groups.push(f.g); });
+    groups.forEach(function (g) {
+      var fs = FIELDS.filter(function (f) { return f.g === g; }), adv = fs[0].adv;
+      var inner = fs.map(function (f) {
+        var id = 'f_' + f.k, v = O[f.k], input;
+        if (f.t === 'num') input = '<input id="' + id + '" data-k="' + f.k + '" type="number" inputmode="decimal" min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="' + esc(v) + '">';
+        else if (f.t === 'sel') input = '<select id="' + id + '" data-k="' + f.k + '">' + f.opts.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (String(x[0]) === String(v) ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select>';
+        else if (f.t === 'bool') input = '<input id="' + id + '" data-k="' + f.k + '" type="checkbox"' + (v ? ' checked' : '') + '>';
+        else input = '<input id="' + id + '" data-k="' + f.k + '" type="text" autocapitalize="characters" autocomplete="off" placeholder="' + esc(f.ph || '') + '" value="' + esc(v) + '">';
+        return '<div class="fld' + (f.t === 'bool' ? ' chk' : '') + '"><label for="' + id + '">' + esc(f.label) + '</label>' + input + (f.help ? '<small>' + esc(f.help) + '</small>' : '') + '</div>';
+      }).join('');
+      h += adv ? '<details class="grp"><summary>' + esc(g) + ' — розширені</summary>' + inner + '</details>' : '<fieldset class="grp"><legend>' + esc(g) + '</legend>' + inner + '</fieldset>';
+    });
+    h += '<div class="row"><button class="btn ghost" data-act="wake">' + (S.wake ? 'Екран не гасне ✓' : 'Не гасити екран') + '</button><button class="btn ghost danger" data-act="reset">' +
+      (S.confirm === 'reset' ? 'Точно? Натисни ще раз' : 'Скинути до стандартних') + '</button></div><p class="mut small">Версія ' + APP_VER + '</p>';
+    el.innerHTML = h;
+  }
+
+  function onSetChange(ev) {
+    var t = ev.target, k = t && t.getAttribute('data-k');
+    if (!k) return;
+    var next = Object.assign({}, O);
+    next[k] = t.type === 'checkbox' ? t.checked : t.value;
+    var prev = O;
+    O = clampOpt(next);
+    LS.set('bs_opt_v1', O);
+    if (t.type !== 'checkbox' && String(O[k]) !== String(t.value)) t.value = O[k];
+    applyChanges(prev);
+  }
+
+  function applyChanges(prev) {
+    var strat = ['minScore', 'slAtr', 'tpR', 'maxBars', 'minStopPct', 'breakLookback', 'volMult', 'maxExt', 'btCandles'];
+    var rescan = ['market', 'tf', 'topN', 'minTurnover', 'maxSpread', 'mySymbols'].concat(strat);
+    if (prev.market !== O.market) { S.inst = null; S.htf = {}; S.res = {}; S.order = []; S.rank = null; }
+    if (prev.tf !== O.tf) { S.htf = {}; S.res = {}; S.order = []; }
+    if (prev.market !== O.market || prev.tf !== O.tf || strat.some(function (k) { return prev[k] !== O[k]; })) S.bt = {};
+    if (rescan.some(function (k) { return prev[k] !== O[k]; })) S.nextAt = Date.now() + 1200;
+    else if (prev.refreshSec !== O.refreshSec) planNext();
+    renderSig(); modeLabel();
+  }
+
+  // ---------- Загальне ----------
+  function setStatus(t) { var e = $('#status'); if (e) e.textContent = t; }
+  function setProg(p) { var e = $('#prog'); if (e) e.style.width = (p > 0 ? Math.min(100, p * 100) : 0) + '%'; }
+  function modeLabel() { var e = $('#mode'); if (e) e.textContent = (O.market === 'spot' ? 'Спот' : 'Ф\'ючерси') + ' · ' + tfName(O.tf); }
+  function badges() {
+    var n = S.order.filter(function (s) { return S.res[s] && S.res[s].ev && S.res[s].ev.signal; }).length, oc = openCount();
+    $('#nSig').textContent = n ? String(n) : ''; $('#nJr').textContent = oc ? String(oc) : '';
+  }
+  function renderAll() {
+    renderSig(); modeLabel();
+    if (S.view === 'bt') renderBt();
+    if (S.view === 'jr') renderJr();
+    tick();
+  }
+
+  var toastT = 0;
+  function toast(t) {
+    var e = $('#toast'); e.textContent = t; e.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function () { e.hidden = true; }, 4000);
+  }
+
+  function copyText(t) {
+    function fallback() {
+      var ta = document.createElement('textarea'), ok = false;
+      ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); try { ta.setSelectionRange(0, t.length); ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? 'Скопійовано' : 'Не вдалося скопіювати');
+    }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(function () { toast('Скопійовано: ' + (t.length > 24 ? t.slice(0, 24) + '…' : t)); }, fallback);
+    else fallback();
+  }
+
+  var AC = null;
+  function unlockAudio() {
+    try {
+      if (!AC) { var A = window.AudioContext || window.webkitAudioContext; if (A) AC = new A(); }
+      if (AC && AC.state === 'suspended') AC.resume();
+    } catch (e) { AC = null; }
+  }
+  function beep() {
+    if (!O.sound || !AC) return;
+    try {
+      var t = AC.currentTime;
+      [0, 0.2].forEach(function (d, k) {
+        var osc = AC.createOscillator(), g = AC.createGain();
+        osc.frequency.value = k ? 1175 : 880;
+        g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.3, t + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.16);
+        osc.connect(g); g.connect(AC.destination); osc.start(t + d); osc.stop(t + d + 0.18);
+      });
+    } catch (e) { /* тиша */ }
+  }
+
+  async function wakeToggle() {
+    try {
+      if (S.wake) { await S.wake.release(); S.wake = null; S.wantWake = false; }
+      else if (navigator.wakeLock) { S.wake = await navigator.wakeLock.request('screen'); S.wantWake = true; S.wake.addEventListener('release', function () { S.wake = null; if (S.view === 'set') renderSet(); }); }
+      else toast('Цей браузер не вміє тримати екран увімкненим. Зроби це в Налаштуваннях iPhone → Екран → Автоблокування.');
+    } catch (e) { toast('Не вдалося: ' + e.message); }
+    if (S.view === 'set') renderSet();
+  }
+
+  function planNext() {
+    if (!(O.refreshSec > 0)) { S.nextAt = 0; return; }
+    var now = Date.now(), tfMs = C.TF_MS[O.tf], nextClose = Math.ceil(now / tfMs) * tfMs + 4000;
+    S.nextAt = Math.min(now + O.refreshSec * 1000, nextClose);
+  }
+
+  function tick() {
+    var now = Date.now(), txt;
+    if (S.busy) return;
+    if (S.nextAt && now >= S.nextAt && !document.hidden) { scan(); return; }
+    txt = S.lastScan ? 'Оновлено о ' + hm(S.lastScan) : 'Ще не оновлено';
+    if (S.nextAt) txt += ' · далі через ' + Math.max(0, Math.round((S.nextAt - now) / 1000)) + ' с';
+    else if (S.lastScan) txt += ' · автооновлення вимкнено';
+    setStatus(txt);
+  }
+
+  function show(v) {
+    S.view = v; S.confirm = '';
+    ['sig', 'bt', 'jr', 'set', 'help'].forEach(function (x) {
+      $('#v-' + x).hidden = x !== v;
+      var b = document.querySelector('.tabs [data-v="' + x + '"]'); if (b) b.classList.toggle('on', x === v);
+    });
+    if (v === 'sig') renderSig();
+    if (v === 'bt') renderBt();
+    if (v === 'jr') renderJr();
+    if (v === 'set') renderSet();
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', function (ev) {
+    unlockAudio();
+    var t = ev.target.closest ? ev.target.closest('[data-copy],[data-act],[data-v],summary') : null;
+    if (!t) return;
+    if (t.tagName === 'SUMMARY') {
+      var d = t.parentNode, sym = d && d.getAttribute('data-sym');
+      if (sym) setTimeout(function () { S.open[sym] = d.open; }, 0);
+      return;
+    }
+    if (t.hasAttribute('data-v')) { show(t.getAttribute('data-v')); return; }
+    if (t.hasAttribute('data-copy')) { copyText(t.getAttribute('data-copy')); return; }
+    var a = t.getAttribute('data-act');
+    if (a === 'scan') { if (!S.busy) scan(); else toast('Вже сканую…'); }
+    else if (a === 'jadd') {
+      var r = S.res[t.getAttribute('data-sym')];
+      if (r && r.ev && r.ev.signal) { toast(journalAdd(r, false) ? 'Записано в журнал' : 'Вже є в журналі'); renderSig(); }
+    }
+    else if (a === 'bt') runBacktest();
+    else if (a === 'jupd') { toast('Оновлюю журнал…'); updateJournal().then(function () { renderJr(); badges(); toast('Журнал оновлено'); }); }
+    else if (a === 'jcsv') { if (S.journal.length) copyText(journalCsv()); else toast('Журнал порожній'); }
+    else if (a === 'jclear') {
+      if (S.confirm === 'jclear') { S.journal = []; saveJournal(); S.confirm = ''; toast('Журнал очищено'); badges(); }
+      else S.confirm = 'jclear';
+      renderJr();
+    }
+    else if (a === 'jdel') {
+      var id = t.getAttribute('data-id');
+      S.journal = S.journal.filter(function (e) { return e.id !== id; }); saveJournal(); renderJr(); badges();
+    }
+    else if (a === 'reset') {
+      if (S.confirm === 'reset') { var prev = O; O = clampOpt({}); LS.set('bs_opt_v1', O); S.confirm = ''; applyChanges(prev); toast('Налаштування скинуто'); }
+      else S.confirm = 'reset';
+      renderSet();
+    }
+    else if (a === 'wake') wakeToggle();
+  });
+  document.addEventListener('touchend', unlockAudio, { passive: true });
+  $('#v-set').addEventListener('change', onSetChange);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) {
+      if (S.wantWake && !S.wake && navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { S.wake = w; }).catch(function () { });
+      tick();
+    }
+  });
+
+  modeLabel();
+  renderSig();
+  setInterval(tick, 1000);
+  S.nextAt = Date.now() + 300;   // перший скан одразу
+  window.__bs = { S: S, O: function () { return O; }, scan: scan };  // для діагностики
+})();
+
+</script>
+</body>
+</html>
