@@ -20,6 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STRATEGIES, profileOf, sizeOrder, RiskGuard, toSeries, floorStep, roundTick, TF_MS } from './core.mjs';
 import { isNonCrypto } from './data.mjs';
+import { INDICATORS } from './indicators.mjs';
 
 const ENV = process.env;
 const num = (v, d) => (v === undefined || v === '' || !Number.isFinite(+v) ? d : +v);
@@ -45,8 +46,17 @@ export const STRATS = {
   scalp1m: () => STRATEGIES.scalp1m(),
   spikeFade: () => STRATEGIES.spikeFade(),
   pumpRide: () => STRATEGIES.pumpRide(),
+  // індикатори TradingView (docs/tradingview-indicators.md)
+  ssl4h: () => INDICATORS.ssl({ tf: '4h' }),
+  hull4h: () => INDICATORS.hull({ tf: '4h' }),
+  supertrend4h: () => INDICATORS.supertrend({ tf: '4h' }),
+  squeeze4h: () => INDICATORS.squeeze({ tf: '4h' }),
+  utbot: () => INDICATORS.utbot({ tf: '1h' }),
+  wavetrend: () => INDICATORS.wavetrend({ tf: '1h' }),
+  lorentzian: () => INDICATORS.lorentzian({ tf: '1h' }),
 };
-export const PROVEN = new Set(['trend4h']);
+// пройшли перевірку на BTC/ETH/SOL на обох частинах історії
+export const PROVEN = new Set(['trend4h', 'ssl4h']);
 const BASES = { live: 'https://api.bybit.com', demo: 'https://api-demo.bybit.com', testnet: 'https://api-testnet.bybit.com' };
 const BYBIT_TF = { '1m': '1', '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1d': 'D' };
 

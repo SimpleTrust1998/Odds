@@ -305,7 +305,7 @@ export function backtest(S, strat, o = {}) {
     const gross = pos.dir * pos.qty * (price - pos.entry);
     eq += gross - fee; feesPaid += fee;
     const pnl = gross - fee - pos.feeIn - pos.fund;
-    trades.push({ t0: S.t[pos.bar], t1: S.t[i], dir: pos.dir, entry: pos.entry, exit: price, qty: pos.qty, pnl, ret: pnl / pos.eqIn, why, bars: i - pos.bar, lev: pos.lev });
+    trades.push({ t0: S.t[pos.bar], t1: S.t[i], dir: pos.dir, entry: pos.entry, exit: price, qty: pos.qty, pnl, ret: pnl / pos.eqIn, R: pnl / (pos.eqIn * (pos.risk || 0.01)), why, bars: i - pos.bar, lev: pos.lev });
     guard.onClosed(pnl, S.t[i]);
     pos = null;
   };
@@ -322,7 +322,7 @@ export function backtest(S, strat, o = {}) {
       if (fill !== null && (s.dir > 0 ? fill > s.stop : fill < s.stop)) {
         const fee = s.qty * fill * (maker ? fees.maker : fees.taker);
         eq -= fee; feesPaid += fee;
-        pos = { dir: s.dir, entry: fill, qty: s.qty, stop: s.stop, tp: s.tp, bar: i, ext: fill, feeIn: fee, fund: 0, eqIn: s.eqIn, lev: s.lev, exitNext: null };
+        pos = { dir: s.dir, entry: fill, qty: s.qty, stop: s.stop, tp: s.tp, bar: i, ext: fill, feeIn: fee, fund: 0, eqIn: s.eqIn, lev: s.lev, risk: s.risk, exitNext: null };
       }
     }
     // 2) вихід, ухвалений на закритті попередньої свічки
@@ -359,7 +359,7 @@ export function backtest(S, strat, o = {}) {
         else {
           const z = sizeOrder({ equity: eq, price: s.entry === 'limit' ? s.limit : C, stop: s.stop, profile, spec, fees, slip });
           if (z.reject) reject(z.reject);
-          else pending = { ...s, qty: z.qty, lev: z.lev, eqIn: eq };
+          else pending = { ...s, qty: z.qty, lev: z.lev, eqIn: eq, risk: z.risk };
         }
       }
     }
@@ -381,6 +381,7 @@ function finish({ trades, daily, eq0, eq, feesPaid, fundPaid, maxDd, guard, reje
   return {
     trades, daily, n, winRate: n ? wins.length / n : 0, pf: gl > 0 ? gp / gl : gp > 0 ? Infinity : 0,
     avgRet: n ? trades.reduce((s, x) => s + x.ret, 0) / n : 0,
+    avgR: n ? trades.reduce((s, x) => s + (x.R ?? x.ret / 0.01), 0) / n : 0,
     net: eq / eq0 - 1, final: eq, maxDd, feesPaid, fundPaid, worstStreak, days,
     perMonth: days > 0 ? (eq / eq0) ** (30 / days) - 1 : 0,
     sharpe: sd > 0 ? (mu / sd) * Math.sqrt(365) : 0,
@@ -510,7 +511,7 @@ export function backtestPortfolio(list, makeStrat, o = {}) {
     const pos = it.pos, fee = pos.qty * price * (maker ? fees.maker : fees.taker), gross = pos.dir * pos.qty * (price - pos.entry);
     eq += gross - fee; feesPaid += fee;
     const pnl = gross - fee - pos.feeIn - pos.fund;
-    trades.push({ sym: it.sym, t0: it.S.t[pos.bar], t1: it.S.t[i], dir: pos.dir, entry: pos.entry, exit: price, qty: pos.qty, pnl, ret: pnl / pos.eqIn, why, bars: i - pos.bar, lev: pos.lev });
+    trades.push({ sym: it.sym, t0: it.S.t[pos.bar], t1: it.S.t[i], dir: pos.dir, entry: pos.entry, exit: price, qty: pos.qty, pnl, ret: pnl / pos.eqIn, R: pnl / (pos.eqIn * (pos.risk || 0.01)), why, bars: i - pos.bar, lev: pos.lev });
     guard.onClosed(pnl, it.S.t[i]);
     it.pos = null;
   };
@@ -534,7 +535,7 @@ export function backtestPortfolio(list, makeStrat, o = {}) {
         if (fill !== null && (s.dir > 0 ? fill > s.stop : fill < s.stop)) {
           const fee = s.qty * fill * (maker ? fees.maker : fees.taker);
           eq -= fee; feesPaid += fee;
-          it.pos = { dir: s.dir, entry: fill, qty: s.qty, stop: s.stop, tp: s.tp, bar: i, ext: fill, feeIn: fee, fund: 0, eqIn: s.eqIn, lev: s.lev, exitNext: null };
+          it.pos = { dir: s.dir, entry: fill, qty: s.qty, stop: s.stop, tp: s.tp, bar: i, ext: fill, feeIn: fee, fund: 0, eqIn: s.eqIn, lev: s.lev, risk: s.risk, exitNext: null };
         }
       }
       if (it.pos && it.pos.exitNext) exit(it, i, O * (1 - it.pos.dir * it.slip), it.pos.exitNext);
@@ -576,7 +577,7 @@ export function backtestPortfolio(list, makeStrat, o = {}) {
       const z = sizeOrder({ equity: eq, price: px, stop: s.stop, profile, spec: it.spec, fees, slip: it.slip });
       if (z.reject) { reject(z.reject); continue; }
       if (margin() + z.notional / z.lev > eq * 0.95) { reject('бракує маржі'); continue; }
-      it.pending = { ...s, qty: z.qty, lev: z.lev, eqIn: eq, px };
+      it.pending = { ...s, qty: z.qty, lev: z.lev, eqIn: eq, px, risk: z.risk };
     }
   }
   for (const it of items) if (it.pos) exit(it, it.i, it.last, 'кінець даних');
